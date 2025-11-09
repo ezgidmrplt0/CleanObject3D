@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;              // Slider / Text
+using UnityEngine.Events;          // UnityEvent
 using DG.Tweening;
+using UnityEngine.Serialization;   // FormerlySerializedAs
 
 public class DirtCleaner : MonoBehaviour
 {
@@ -15,14 +18,35 @@ public class DirtCleaner : MonoBehaviour
     [Tooltip("Sahneden kir GameObject'lerini buraya sürükle-býrak.")]
     public List<Transform> dirtItems = new List<Transform>();
 
-    [Header("Swipe / Temizleme Ayarlarý")]
+    [Header("Swipe / Temizleme Giriþi")]
     [Tooltip("Bir temizleme sayýlmasý için gereken yatay sürükleme (piksel).")]
     public float swipeThresholdPixels = 60f;
-    [Tooltip("Temizleme animasyon süresi (saniye).")]
-    public float cleanDuration = 0.45f;
+
+    [Header("Temizleme Animasyonu")]
+    [FormerlySerializedAs("cleanDuration")]
+    [Tooltip("Temel temizleme süresi (saniye). Varsayýlan 1 sn.")]
+    [Min(0.01f)] public float baseCleanDuration = 1f;
+
+    [Tooltip("Seviye baþýna süre çarpaný. 1 = sabit, 1.1 = her seviyede %10 uzar, 0.9 = kýsalýr.")]
+    [Min(0.01f)] public float levelDurationMultiplier = 1f;
+
+    [Tooltip("Geçerli seviye (1 taban). finalSüre = base * multiplier^(level-1)")]
+    [Min(1)] public int currentLevel = 1;
+
     public Ease cleanEase = Ease.InBack;
+
     [Tooltip("Temizlendikten sonra obje silinsin mi?")]
     public bool destroyAfterClean = true;
+
+    [Header("UI - Temizlik Ýlerleme Çubuðu")]
+    [Tooltip("0..1 arasýnda deðer alacak Slider (opsiyonel ama önerilir).")]
+    public Slider cleanProgressBar;
+    [Tooltip("Ýsteðe baðlý yüzde metni (UI Text veya TextMeshPro-UGUI).")]
+    public Graphic progressTextGraphic; // Text ya da TMP_Text referansý olabilir
+
+    [Header("Olaylar")]
+    [Tooltip("%100 temizlenince tetiklenir (bir kere).")]
+    public UnityEvent onAllCleaned;
 
     // dahili durumlar
     Vector2 startPos;
@@ -30,10 +54,28 @@ public class DirtCleaner : MonoBehaviour
     Transform activeDirt = null;          // üstüne basýlmýþ olan kir
     HashSet<Transform> cleaned = new HashSet<Transform>();
 
+    int totalDirtPlanned = 0;             // toplam hedef (baþlangýç + sonradan eklenenler)
+    int cleanedCount = 0;                 // tamamlananlar
+    bool allCleanedFired = false;
+
     void Start()
     {
         if (!cam) cam = Camera.main;
-        // DOTween setup'ý yaptýðýndan emin ol: Tools > Demigiant > DOTween Utility Panel > Setup DOTween
+        // DOTween setup'ý: Tools > Demigiant > DOTween Utility Panel > Setup DOTween
+
+        // Baþlangýç toplamýný belirle (benzersiz say)
+        totalDirtPlanned = 0;
+        var seen = new HashSet<Transform>();
+        foreach (var t in dirtItems)
+        {
+            if (t != null && seen.Add(t)) totalDirtPlanned++;
+        }
+
+        // Güvenlik: cleaned baþlangýçta doluysa say
+        cleanedCount = 0;
+        foreach (var t in cleaned) if (t != null) cleanedCount++;
+
+        UpdateProgressUI();
     }
 
     void Update()
@@ -41,7 +83,6 @@ public class DirtCleaner : MonoBehaviour
         // Kamera açýkken istemiyorsan engelle
         if (onlyWhenCameraLocked && cameraController != null)
         {
-            // MobileCameraController'da public bool controlsEnabled vardý:
             var field = cameraController.GetType().GetField("controlsEnabled");
             if (field != null)
             {
@@ -117,15 +158,30 @@ public class DirtCleaner : MonoBehaviour
         {
             cleaned.Add(activeDirt);
 
-            // DOTween animasyonu: scale 0'a küçül
-            activeDirt.DOScale(Vector3.zero, cleanDuration)
+            float finalDuration = GetCurrentCleanDuration();
+
+            // DOTween animasyonu: scale 0'a küçül (süre inspector'dan ayarlý)
+            activeDirt.DOScale(Vector3.zero, finalDuration)
                       .SetEase(cleanEase)
                       .OnComplete(() =>
                       {
+                          // Temizleme tamamlandý say
+                          cleanedCount = Mathf.Max(cleanedCount, 0) + 1;
+                          UpdateProgressUI();
+
                           if (destroyAfterClean && activeDirt != null)
                               Destroy(activeDirt.gameObject);
                       });
         }
+    }
+
+    float GetCurrentCleanDuration()
+    {
+        // final = base * multiplier^(level-1)
+        int lvl = Mathf.Max(1, currentLevel);
+        float mult = Mathf.Max(0.01f, levelDurationMultiplier);
+        float baseDur = Mathf.Max(0.01f, baseCleanDuration);
+        return baseDur * Mathf.Pow(mult, lvl - 1);
     }
 
     void ResetDrag()
@@ -167,15 +223,81 @@ public class DirtCleaner : MonoBehaviour
         return null;
     }
 
+    // -------------------- ÝLERLEME / UI --------------------
+    void UpdateProgressUI()
+    {
+        // total 0 ise bar’ý gizlemek istersen:
+        if (cleanProgressBar)
+            cleanProgressBar.gameObject.SetActive(totalDirtPlanned > 0);
+
+        float ratio = 0f;
+        if (totalDirtPlanned > 0)
+            ratio = Mathf.Clamp01((float)cleanedCount / totalDirtPlanned);
+
+        if (cleanProgressBar)
+            cleanProgressBar.value = ratio;
+
+        // yüzde metni: hem Text hem TMP_Text’i destekleyelim
+        if (progressTextGraphic)
+        {
+            string pct = Mathf.RoundToInt(ratio * 100f) + "%";
+            var uiText = progressTextGraphic as Text;
+            if (uiText) uiText.text = pct;
+
+#if TMP_PRESENT
+            var tmp = progressTextGraphic as TMPro.TMP_Text;
+            if (tmp) tmp.text = pct;
+#endif
+        }
+
+        if (!allCleanedFired && totalDirtPlanned > 0 && cleanedCount >= totalDirtPlanned)
+        {
+            allCleanedFired = true;
+            onAllCleaned?.Invoke();
+        }
+    }
+
     // -------------------- YARDIMCI: Liste yönetimi --------------------
     public void AddDirt(Transform dirt)
     {
-        if (!dirtItems.Contains(dirt)) dirtItems.Add(dirt);
+        if (dirt == null) return;
+        if (!dirtItems.Contains(dirt))
+        {
+            dirtItems.Add(dirt);
+            // temizlenmemiþ yeni hedef ekleniyorsa toplamý artýr
+            if (!cleaned.Contains(dirt))
+                totalDirtPlanned++;
+            UpdateProgressUI();
+        }
     }
 
     public void RemoveDirt(Transform dirt)
     {
+        if (dirt == null) return;
+
+        bool wasCountedAsPlanned = dirtItems.Contains(dirt) && !cleaned.Contains(dirt);
         dirtItems.Remove(dirt);
+
+        if (wasCountedAsPlanned && totalDirtPlanned > cleanedCount)
+            totalDirtPlanned--;
+
         cleaned.Remove(dirt);
+
+        UpdateProgressUI();
+    }
+
+    // Ýstersen harici yerden “tekrar hesapla” çaðýrabilmen için:
+    public void RecalculateTotalsFromList()
+    {
+        var seen = new HashSet<Transform>();
+        int newPlanned = 0;
+        foreach (var t in dirtItems)
+        {
+            if (t != null && !cleaned.Contains(t) && seen.Add(t))
+                newPlanned++;
+        }
+        // total = temizlenenler + geriye kalanlar
+        totalDirtPlanned = cleanedCount + newPlanned;
+        UpdateProgressUI();
     }
 }
