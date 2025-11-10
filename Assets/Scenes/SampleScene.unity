@@ -1184,6 +1184,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 831147479585723194, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
+      propertyPath: m_TagString
+      value: Inspectable
+      objectReference: {fileID: 0}
     - target: {fileID: 6620343383841487137, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       propertyPath: m_Name
       value: Bathroom
@@ -1545,6 +1549,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1697540212}
+  - component: {fileID: 1697540213}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1567,6 +1572,43 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1697540213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697540211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f56f03079e679a41a7a643c111c5884, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inspectableTag: Inspectable
+  mainCamera: {fileID: 963194227}
+  transitionDuration: 0.8
+  transitionEase: 9
+  inspectionOffset: {x: 0, y: 0, z: 3}
+  inspectionScale: 4
+  hideOtherObjects: 1
+  hideUIElements: 1
+  mainCanvas: {fileID: 0}
+  backgroundColor: {r: 0.1, g: 0.1, b: 0.15, a: 1}
+  backgroundPanel: {fileID: 0}
+  rotationSensitivity: 0.5
+  rotationSmoothing: 0.15
+  rotationSpeed: 150
+  canRotateX: 1
+  canRotateY: 1
+  ignoreUIClicks: 1
+  raycastDistance: 100
+  backButton: {fileID: 0}
+  onInspectionStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onInspectionEnded:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1998409118
 GameObject:
   m_ObjectHideFlags: 0
