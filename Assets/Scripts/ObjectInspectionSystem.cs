@@ -85,6 +85,16 @@ public class ObjectInspectionSystem : MonoBehaviour
     private GameState currentState = GameState.NormalView;
     public GameState CurrentState => currentState;
 
+    [Header("=== DÖNDÜRME AÇ/KAPA ===")]
+    [Tooltip("İnceleme modunda objeyi döndürmeyi etkin/pasif yapar.")]
+    public bool rotationEnabled = true;
+
+    [Header("=== HIGHLIGHT AYARI ===")]
+    [Tooltip("İnceleme sırasında emisyonla vurgulama yapilsin mı?")]
+    public bool enableEmissionHighlight = false;
+    [Tooltip("Dirt maskeli materyallerde highlight'ı atla (kiri yıkamasın)")]
+    public bool skipHighlightOnDirtMaterials = true;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -112,7 +122,8 @@ public class ObjectInspectionSystem : MonoBehaviour
         // İnceleme modunda döndürme
         if (currentState == GameState.Inspecting && !isTransitioning)
         {
-            HandleRotation();
+            if (rotationEnabled)
+                HandleRotation();
         }
     }
 
@@ -207,6 +218,10 @@ public class ObjectInspectionSystem : MonoBehaviour
             if (backButton) backButton.SetActive(true);
             onInspectionStarted?.Invoke();
             Debug.Log($"[Inspection] {obj.name} inceleniyor.");
+
+            // Re-apply dirt properties if present (in case materials were re-instanced elsewhere)
+            var dirt = obj.GetComponentInChildren<DirtPaintable>();
+            if (dirt) dirt.ReapplyAllProperties();
         });
 
         SetHighlight(obj, true);
@@ -233,6 +248,7 @@ public class ObjectInspectionSystem : MonoBehaviour
             isTransitioning = false;
             currentState = GameState.NormalView;
             currentObject = null;
+            rotationEnabled = true; // çıkışta varsayılanı tekrar aç
             
             // Gizli objeleri geri göster
             ShowSceneObjects();
@@ -271,6 +287,7 @@ public class ObjectInspectionSystem : MonoBehaviour
 
     void HandleMouseRotation()
     {
+        if (!rotationEnabled) return;
         if (ignoreUIClicks && EventSystem.current && EventSystem.current.IsPointerOverGameObject())
             return;
 
@@ -295,6 +312,7 @@ public class ObjectInspectionSystem : MonoBehaviour
 
     void HandleTouchRotation()
     {
+        if (!rotationEnabled) return;
         if (Input.touchCount > 0 && ignoreUIClicks && EventSystem.current)
         {
             if (EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId))
@@ -367,22 +385,29 @@ public class ObjectInspectionSystem : MonoBehaviour
     // ========== HIGHLIGHT EFEKTİ ==========
     void SetHighlight(GameObject obj, bool enable)
     {
-        Renderer renderer = obj.GetComponent<Renderer>();
-        if (renderer == null) return;
+        if (!enableEmissionHighlight) return;
 
-        if (enable)
+        // Tüm alt renderer'lar üzerinden dolaş
+        var renderers = obj.GetComponentsInChildren<Renderer>(true);
+        foreach (var renderer in renderers)
         {
+            if (renderer == null) continue;
+
+            // Dirt materyallerinde emisyonu atla
+            if (skipHighlightOnDirtMaterials && renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_DirtMask"))
+                continue;
+
             if (renderer.material.HasProperty("_EmissionColor"))
             {
-                renderer.material.EnableKeyword("_EMISSION");
-                renderer.material.SetColor("_EmissionColor", Color.yellow * 0.3f);
-            }
-        }
-        else
-        {
-            if (renderer.material.HasProperty("_EmissionColor"))
-            {
-                renderer.material.SetColor("_EmissionColor", Color.black);
+                if (enable)
+                {
+                    renderer.material.EnableKeyword("_EMISSION");
+                    renderer.material.SetColor("_EmissionColor", Color.yellow * 0.2f);
+                }
+                else
+                {
+                    renderer.material.SetColor("_EmissionColor", Color.black);
+                }
             }
         }
     }
@@ -398,7 +423,7 @@ public class ObjectInspectionSystem : MonoBehaviour
         foreach (Renderer rend in allRenderers)
         {
             // İncelenen obje değilse ve aktifse
-            if (rend.gameObject != exceptThis && rend.gameObject.activeSelf)
+            if (!rend.transform.IsChildOf(exceptThis.transform) && rend.gameObject.activeSelf)
             {
                 // Geri butonu ve arka plan paneli hariç
                 if (backButton != null && rend.transform.IsChildOf(backButton.transform))
@@ -436,5 +461,19 @@ public class ObjectInspectionSystem : MonoBehaviour
         {
             mainCamera.clearFlags = CameraClearFlags.Skybox; // veya SolidColor
         }
+    }
+
+    // ========== PUBLIC UI HOOKS ==========
+    public void ToggleRotationOnOff()
+    {
+        rotationEnabled = !rotationEnabled;
+        isDragging = false; // ani kapamada sürükleme takılı kalmasın
+        Debug.Log($"[Inspection] Rotation: {(rotationEnabled ? "ON" : "OFF")}");
+    }
+
+    public void SetRotationEnabled(bool enabled)
+    {
+        rotationEnabled = enabled;
+        if (!rotationEnabled) isDragging = false;
     }
 }

@@ -8,29 +8,26 @@ using UnityEngine.Serialization;   // FormerlySerializedAs
 
 public class DirtCleaner : MonoBehaviour
 {
-    [Header("Baðlantýlar")]
-    public Camera cam;                                   // Boþsa Start'ta bulunur
-    [Tooltip("Kamera açýkken temizleme yapýlsýn mý? (MobileCameraController kullanýyorsan)")]
-    public bool onlyWhenCameraLocked = true;
-    public MonoBehaviour cameraController;               // MobileCameraController referansý (opsiyonel)
+    [Header("BaÄŸlantÄ±lar")]
+    public Camera cam;                                   // BoÅŸsa Start'ta bulunur
 
     [Header("Kir Listesi")]
-    [Tooltip("Sahneden kir GameObject'lerini buraya sürükle-býrak.")]
+    [Tooltip("Sahneden kir GameObject'lerini buraya sï¿½rï¿½kle-bï¿½rak.")]
     public List<Transform> dirtItems = new List<Transform>();
 
-    [Header("Swipe / Temizleme Giriþi")]
-    [Tooltip("Bir temizleme sayýlmasý için gereken yatay sürükleme (piksel).")]
+    [Header("Swipe / Temizleme Giriï¿½i")]
+    [Tooltip("Bir temizleme sayï¿½lmasï¿½ iï¿½in gereken yatay sï¿½rï¿½kleme (piksel).")]
     public float swipeThresholdPixels = 60f;
 
     [Header("Temizleme Animasyonu")]
     [FormerlySerializedAs("cleanDuration")]
-    [Tooltip("Temel temizleme süresi (saniye). Varsayýlan 1 sn.")]
+    [Tooltip("Temel temizleme sï¿½resi (saniye). Varsayï¿½lan 1 sn.")]
     [Min(0.01f)] public float baseCleanDuration = 1f;
 
-    [Tooltip("Seviye baþýna süre çarpaný. 1 = sabit, 1.1 = her seviyede %10 uzar, 0.9 = kýsalýr.")]
+    [Tooltip("Seviye baï¿½ï¿½na sï¿½re ï¿½arpanï¿½. 1 = sabit, 1.1 = her seviyede %10 uzar, 0.9 = kï¿½salï¿½r.")]
     [Min(0.01f)] public float levelDurationMultiplier = 1f;
 
-    [Tooltip("Geçerli seviye (1 taban). finalSüre = base * multiplier^(level-1)")]
+    [Tooltip("Geï¿½erli seviye (1 taban). finalSï¿½re = base * multiplier^(level-1)")]
     [Min(1)] public int currentLevel = 1;
 
     public Ease cleanEase = Ease.InBack;
@@ -38,11 +35,11 @@ public class DirtCleaner : MonoBehaviour
     [Tooltip("Temizlendikten sonra obje silinsin mi?")]
     public bool destroyAfterClean = true;
 
-    [Header("UI - Temizlik Ýlerleme Çubuðu")]
-    [Tooltip("0..1 arasýnda deðer alacak Slider (opsiyonel ama önerilir).")]
+    [Header("UI - Temizlik ï¿½lerleme ï¿½ubuï¿½u")]
+    [Tooltip("0..1 arasï¿½nda deï¿½er alacak Slider (opsiyonel ama ï¿½nerilir).")]
     public Slider cleanProgressBar;
-    [Tooltip("Ýsteðe baðlý yüzde metni (UI Text veya TextMeshPro-UGUI).")]
-    public Graphic progressTextGraphic; // Text ya da TMP_Text referansý olabilir
+    [Tooltip("ï¿½steï¿½e baï¿½lï¿½ yï¿½zde metni (UI Text veya TextMeshPro-UGUI).")]
+    public Graphic progressTextGraphic; // Text ya da TMP_Text referansï¿½ olabilir
 
     [Header("Olaylar")]
     [Tooltip("%100 temizlenince tetiklenir (bir kere).")]
@@ -51,19 +48,19 @@ public class DirtCleaner : MonoBehaviour
     // dahili durumlar
     Vector2 startPos;
     bool dragging = false;
-    Transform activeDirt = null;          // üstüne basýlmýþ olan kir
+    Transform activeDirt = null;          // ï¿½stï¿½ne basï¿½lmï¿½ï¿½ olan kir
     HashSet<Transform> cleaned = new HashSet<Transform>();
 
-    int totalDirtPlanned = 0;             // toplam hedef (baþlangýç + sonradan eklenenler)
+    int totalDirtPlanned = 0;             // toplam hedef (baï¿½langï¿½ï¿½ + sonradan eklenenler)
     int cleanedCount = 0;                 // tamamlananlar
     bool allCleanedFired = false;
 
     void Start()
     {
         if (!cam) cam = Camera.main;
-        // DOTween setup'ý: Tools > Demigiant > DOTween Utility Panel > Setup DOTween
+        // DOTween setup'ï¿½: Tools > Demigiant > DOTween Utility Panel > Setup DOTween
 
-        // Baþlangýç toplamýný belirle (benzersiz say)
+        // Baï¿½langï¿½ï¿½ toplamï¿½nï¿½ belirle (benzersiz say)
         totalDirtPlanned = 0;
         var seen = new HashSet<Transform>();
         foreach (var t in dirtItems)
@@ -71,7 +68,7 @@ public class DirtCleaner : MonoBehaviour
             if (t != null && seen.Add(t)) totalDirtPlanned++;
         }
 
-        // Güvenlik: cleaned baþlangýçta doluysa say
+        // Gï¿½venlik: cleaned baï¿½langï¿½ï¿½ta doluysa say
         cleanedCount = 0;
         foreach (var t in cleaned) if (t != null) cleanedCount++;
 
@@ -80,16 +77,7 @@ public class DirtCleaner : MonoBehaviour
 
     void Update()
     {
-        // Kamera açýkken istemiyorsan engelle
-        if (onlyWhenCameraLocked && cameraController != null)
-        {
-            var field = cameraController.GetType().GetField("controlsEnabled");
-            if (field != null)
-            {
-                bool controlsEnabled = (bool)field.GetValue(cameraController);
-                if (controlsEnabled) { ResetDrag(); return; }
-            }
-        }
+        // Kamera kontrol scriptlerine baÄŸlÄ± bir kilitleme mekanizmasÄ± kaldÄ±rÄ±ldÄ±
 
 #if UNITY_EDITOR || UNITY_STANDALONE
         HandleMouse();
@@ -101,7 +89,7 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- INPUT --------------------
     void HandleMouse()
     {
-        // UI üstünde týklama ise görmezden gel
+        // UI ï¿½stï¿½nde tï¿½klama ise gï¿½rmezden gel
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (Input.GetMouseButtonDown(0))
@@ -123,7 +111,7 @@ public class DirtCleaner : MonoBehaviour
     {
         if (Input.touchCount == 0) return;
 
-        // UI üstü dokunuþlarý atla
+        // UI ï¿½stï¿½ dokunuï¿½larï¿½ atla
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
 
         Touch t = Input.touches[0];
@@ -147,7 +135,7 @@ public class DirtCleaner : MonoBehaviour
         }
     }
 
-    // -------------------- TEMÝZLEME --------------------
+    // -------------------- TEMï¿½ZLEME --------------------
     void TryCleanBySwipe(Vector2 endPos)
     {
         if (activeDirt == null || cleaned.Contains(activeDirt)) return;
@@ -160,12 +148,12 @@ public class DirtCleaner : MonoBehaviour
 
             float finalDuration = GetCurrentCleanDuration();
 
-            // DOTween animasyonu: scale 0'a küçül (süre inspector'dan ayarlý)
+            // DOTween animasyonu: scale 0'a kï¿½ï¿½ï¿½l (sï¿½re inspector'dan ayarlï¿½)
             activeDirt.DOScale(Vector3.zero, finalDuration)
                       .SetEase(cleanEase)
                       .OnComplete(() =>
                       {
-                          // Temizleme tamamlandý say
+                          // Temizleme tamamlandï¿½ say
                           cleanedCount = Mathf.Max(cleanedCount, 0) + 1;
                           UpdateProgressUI();
 
@@ -193,12 +181,12 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- RAYCAST (2D/3D destekli) --------------------
     Transform PickDirtUnderPointer(Vector2 screenPos)
     {
-        // Önce 2D collider var mý diye dene
+        // ï¿½nce 2D collider var mï¿½ diye dene
         Vector3 wp = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
         Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
         if (hits2D != null && hits2D.Length > 0)
         {
-            for (int i = hits2D.Length - 1; i >= 0; i--) // üstteki önce
+            for (int i = hits2D.Length - 1; i >= 0; i--) // ï¿½stteki ï¿½nce
             {
                 Transform tr = hits2D[i].transform;
                 if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
@@ -206,12 +194,12 @@ public class DirtCleaner : MonoBehaviour
             }
         }
 
-        // 3D collider için raycast
+        // 3D collider iï¿½in raycast
         Ray ray = cam.ScreenPointToRay(screenPos);
         RaycastHit[] hits3D = Physics.RaycastAll(ray, 1000f);
         if (hits3D != null && hits3D.Length > 0)
         {
-            // Ekrana en yakýn olaný seç
+            // Ekrana en yakï¿½n olanï¿½ seï¿½
             System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var hit in hits3D)
             {
@@ -223,10 +211,10 @@ public class DirtCleaner : MonoBehaviour
         return null;
     }
 
-    // -------------------- ÝLERLEME / UI --------------------
+    // -------------------- ï¿½LERLEME / UI --------------------
     void UpdateProgressUI()
     {
-        // total 0 ise bar’ý gizlemek istersen:
+        // total 0 ise barï¿½ï¿½ gizlemek istersen:
         if (cleanProgressBar)
             cleanProgressBar.gameObject.SetActive(totalDirtPlanned > 0);
 
@@ -237,7 +225,7 @@ public class DirtCleaner : MonoBehaviour
         if (cleanProgressBar)
             cleanProgressBar.value = ratio;
 
-        // yüzde metni: hem Text hem TMP_Text’i destekleyelim
+        // yï¿½zde metni: hem Text hem TMP_Textï¿½i destekleyelim
         if (progressTextGraphic)
         {
             string pct = Mathf.RoundToInt(ratio * 100f) + "%";
@@ -257,14 +245,14 @@ public class DirtCleaner : MonoBehaviour
         }
     }
 
-    // -------------------- YARDIMCI: Liste yönetimi --------------------
+    // -------------------- YARDIMCI: Liste yï¿½netimi --------------------
     public void AddDirt(Transform dirt)
     {
         if (dirt == null) return;
         if (!dirtItems.Contains(dirt))
         {
             dirtItems.Add(dirt);
-            // temizlenmemiþ yeni hedef ekleniyorsa toplamý artýr
+            // temizlenmemiï¿½ yeni hedef ekleniyorsa toplamï¿½ artï¿½r
             if (!cleaned.Contains(dirt))
                 totalDirtPlanned++;
             UpdateProgressUI();
@@ -286,7 +274,7 @@ public class DirtCleaner : MonoBehaviour
         UpdateProgressUI();
     }
 
-    // Ýstersen harici yerden “tekrar hesapla” çaðýrabilmen için:
+    // ï¿½stersen harici yerden ï¿½tekrar hesaplaï¿½ ï¿½aï¿½ï¿½rabilmen iï¿½in:
     public void RecalculateTotalsFromList()
     {
         var seen = new HashSet<Transform>();
@@ -298,6 +286,26 @@ public class DirtCleaner : MonoBehaviour
         }
         // total = temizlenenler + geriye kalanlar
         totalDirtPlanned = cleanedCount + newPlanned;
+        UpdateProgressUI();
+    }
+
+    // TÃ¼m ilerlemeyi sÄ±fÄ±rla ve yeni hedef listesiyle baÅŸlat
+    public void ResetAll(List<Transform> newDirt)
+    {
+        cleaned.Clear();
+        cleanedCount = 0;
+        allCleanedFired = false;
+        dirtItems = new List<Transform>();
+        if (newDirt != null)
+            dirtItems.AddRange(newDirt);
+
+        // total sayÄ±sÄ±nÄ± baÅŸtan kur
+        var seen = new HashSet<Transform>();
+        totalDirtPlanned = 0;
+        foreach (var t in dirtItems)
+        {
+            if (t != null && seen.Add(t)) totalDirtPlanned++;
+        }
         UpdateProgressUI();
     }
 }
