@@ -1659,6 +1659,7 @@ MonoBehaviour:
   dirtColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   dirtIntensity: 1
   autoWrapMaterialWithDirtShader: 1
+  debugLog: 1
 --- !u!1001 &1970564432
 PrefabInstance:
   m_ObjectHideFlags: 0
