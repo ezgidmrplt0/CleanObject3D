@@ -443,6 +443,8 @@ MonoBehaviour:
   - {fileID: 1002478030}
   - {fileID: 1594236909}
   - {fileID: 2056007756}
+  useBrushMode: 1
+  brushMoveThreshold: 5
   swipeThresholdPixels: 60
   baseCleanDuration: 0.45
   levelDurationMultiplier: 1
@@ -815,6 +817,7 @@ GameObject:
   - component: {fileID: 1002478034}
   - component: {fileID: 1002478033}
   - component: {fileID: 1002478032}
+  - component: {fileID: 1002478035}
   m_Layer: 0
   m_Name: Dirt (2)
   m_TagString: Untagged
@@ -909,6 +912,22 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1002478029}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1002478035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002478029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f95fc5b6a6ad9b04fb7a063361207643, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brushSize: 0.5
+  brushHardness: 0.5
+  cleanThreshold: 0.85
+  textureResolution: 256
 --- !u!1 &1078411621
 GameObject:
   m_ObjectHideFlags: 0
@@ -1336,6 +1355,7 @@ GameObject:
   - component: {fileID: 1560526809}
   - component: {fileID: 1560526808}
   - component: {fileID: 1560526807}
+  - component: {fileID: 1560526811}
   m_Layer: 0
   m_Name: Dirt
   m_TagString: Untagged
@@ -1430,6 +1450,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 514804092}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1560526811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1560526806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f95fc5b6a6ad9b04fb7a063361207643, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brushSize: 0.5
+  brushHardness: 0.5
+  cleanThreshold: 0.85
+  textureResolution: 256
 --- !u!1 &1594236908
 GameObject:
   m_ObjectHideFlags: 0
@@ -1442,6 +1478,7 @@ GameObject:
   - component: {fileID: 1594236913}
   - component: {fileID: 1594236912}
   - component: {fileID: 1594236911}
+  - component: {fileID: 1594236914}
   m_Layer: 0
   m_Name: Dirt (3)
   m_TagString: Untagged
@@ -1536,6 +1573,22 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1594236908}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1594236914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594236908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f95fc5b6a6ad9b04fb7a063361207643, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brushSize: 0.5
+  brushHardness: 0.5
+  cleanThreshold: 0.85
+  textureResolution: 256
 --- !u!1 &1697540211
 GameObject:
   m_ObjectHideFlags: 0
@@ -1654,6 +1707,7 @@ GameObject:
   - component: {fileID: 2056007760}
   - component: {fileID: 2056007759}
   - component: {fileID: 2056007758}
+  - component: {fileID: 2056007761}
   m_Layer: 0
   m_Name: Dirt (1)
   m_TagString: Untagged
@@ -1748,6 +1802,22 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2056007755}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &2056007761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2056007755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f95fc5b6a6ad9b04fb7a063361207643, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brushSize: 0.5
+  brushHardness: 0.5
+  cleanThreshold: 0.85
+  textureResolution: 256
 --- !u!1 &2087674022
 GameObject:
   m_ObjectHideFlags: 0

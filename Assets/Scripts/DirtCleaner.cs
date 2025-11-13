@@ -1,36 +1,44 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;              // Slider / Text
-using UnityEngine.Events;          // UnityEvent
+using UnityEngine.UI;
+using UnityEngine.Events;
 using DG.Tweening;
-using UnityEngine.Serialization;   // FormerlySerializedAs
+using UnityEngine.Serialization;
 
 public class DirtCleaner : MonoBehaviour
 {
-    [Header("Baðlantýlar")]
-    public Camera cam;                                   // Boþsa Start'ta bulunur
-    [Tooltip("Kamera açýkken temizleme yapýlsýn mý? (MobileCameraController kullanýyorsan)")]
+    [Header("BaÄŸlantÄ±lar")]
+    public Camera cam;
+    [Tooltip("Kamera aÃ§Ä±kken temizleme yapÄ±lsÄ±n mÄ±?")]
     public bool onlyWhenCameraLocked = true;
-    public MonoBehaviour cameraController;               // MobileCameraController referansý (opsiyonel)
+    public MonoBehaviour cameraController;
 
     [Header("Kir Listesi")]
-    [Tooltip("Sahneden kir GameObject'lerini buraya sürükle-býrak.")]
+    [Tooltip("Sahneden kir GameObject'lerini buraya sÃ¼rÃ¼kle-bÄ±rak.")]
     public List<Transform> dirtItems = new List<Transform>();
 
-    [Header("Swipe / Temizleme Giriþi")]
-    [Tooltip("Bir temizleme sayýlmasý için gereken yatay sürükleme (piksel).")]
+    [Header("Temizleme Modu")]
+    [Tooltip("Brush (fÄ±rÃ§a) modu mu, yoksa eski Swipe modu mu?")]
+    public bool useBrushMode = true;
+    
+    [Header("Brush AyarlarÄ± (Brush Mode Ä°Ã§in)")]
+    [Tooltip("FÄ±rÃ§a hareketi iÃ§in minimum mesafe (piksel)")]
+    public float brushMoveThreshold = 5f;
+
+    [Header("Swipe AyarlarÄ± (Eski Mod Ä°Ã§in)")]
+    [Tooltip("Bir temizleme sayÄ±lmasÄ± iÃ§in gereken yatay sÃ¼rÃ¼kleme (piksel).")]
     public float swipeThresholdPixels = 60f;
 
     [Header("Temizleme Animasyonu")]
     [FormerlySerializedAs("cleanDuration")]
-    [Tooltip("Temel temizleme süresi (saniye). Varsayýlan 1 sn.")]
+    [Tooltip("Temel temizleme sÃ¼resi (saniye). VarsayÄ±lan 1 sn.")]
     [Min(0.01f)] public float baseCleanDuration = 1f;
 
-    [Tooltip("Seviye baþýna süre çarpaný. 1 = sabit, 1.1 = her seviyede %10 uzar, 0.9 = kýsalýr.")]
+    [Tooltip("Seviye baÅŸÄ±na sÃ¼re Ã§arpanÄ±.")]
     [Min(0.01f)] public float levelDurationMultiplier = 1f;
 
-    [Tooltip("Geçerli seviye (1 taban). finalSüre = base * multiplier^(level-1)")]
+    [Tooltip("GeÃ§erli seviye (1 taban).")]
     [Min(1)] public int currentLevel = 1;
 
     public Ease cleanEase = Ease.InBack;
@@ -38,32 +46,32 @@ public class DirtCleaner : MonoBehaviour
     [Tooltip("Temizlendikten sonra obje silinsin mi?")]
     public bool destroyAfterClean = true;
 
-    [Header("UI - Temizlik Ýlerleme Çubuðu")]
-    [Tooltip("0..1 arasýnda deðer alacak Slider (opsiyonel ama önerilir).")]
+    [Header("UI - Temizlik Ä°lerleme Ã‡ubuÄŸu")]
+    [Tooltip("0..1 arasÄ±nda deÄŸer alacak Slider.")]
     public Slider cleanProgressBar;
-    [Tooltip("Ýsteðe baðlý yüzde metni (UI Text veya TextMeshPro-UGUI).")]
-    public Graphic progressTextGraphic; // Text ya da TMP_Text referansý olabilir
+    [Tooltip("Ä°steÄŸe baÄŸlÄ± yÃ¼zde metni.")]
+    public Graphic progressTextGraphic;
 
     [Header("Olaylar")]
-    [Tooltip("%100 temizlenince tetiklenir (bir kere).")]
+    [Tooltip("%100 temizlenince tetiklenir.")]
     public UnityEvent onAllCleaned;
 
-    // dahili durumlar
+    // Dahili durumlar
     Vector2 startPos;
+    Vector2 lastBrushPos;
     bool dragging = false;
-    Transform activeDirt = null;          // üstüne basýlmýþ olan kir
+    Transform activeDirt = null;
+    BrushErasableDirt activeBrushDirt = null;
     HashSet<Transform> cleaned = new HashSet<Transform>();
 
-    int totalDirtPlanned = 0;             // toplam hedef (baþlangýç + sonradan eklenenler)
-    int cleanedCount = 0;                 // tamamlananlar
+    int totalDirtPlanned = 0;
+    int cleanedCount = 0;
     bool allCleanedFired = false;
 
     void Start()
     {
         if (!cam) cam = Camera.main;
-        // DOTween setup'ý: Tools > Demigiant > DOTween Utility Panel > Setup DOTween
 
-        // Baþlangýç toplamýný belirle (benzersiz say)
         totalDirtPlanned = 0;
         var seen = new HashSet<Transform>();
         foreach (var t in dirtItems)
@@ -71,7 +79,6 @@ public class DirtCleaner : MonoBehaviour
             if (t != null && seen.Add(t)) totalDirtPlanned++;
         }
 
-        // Güvenlik: cleaned baþlangýçta doluysa say
         cleanedCount = 0;
         foreach (var t in cleaned) if (t != null) cleanedCount++;
 
@@ -80,7 +87,6 @@ public class DirtCleaner : MonoBehaviour
 
     void Update()
     {
-        // Kamera açýkken istemiyorsan engelle
         if (onlyWhenCameraLocked && cameraController != null)
         {
             var field = cameraController.GetType().GetField("controlsEnabled");
@@ -101,20 +107,48 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- INPUT --------------------
     void HandleMouse()
     {
-        // UI üstünde týklama ise görmezden gel
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (Input.GetMouseButtonDown(0))
         {
             startPos = Input.mousePosition;
-            activeDirt = PickDirtUnderPointer(startPos);
-            dragging = (activeDirt != null);
+            lastBrushPos = startPos;
+            
+            if (useBrushMode)
+            {
+                activeDirt = PickDirtUnderPointer(startPos);
+                if (activeDirt != null)
+                {
+                    activeBrushDirt = activeDirt.GetComponent<BrushErasableDirt>();
+                    dragging = (activeBrushDirt != null);
+                }
+            }
+            else
+            {
+                activeDirt = PickDirtUnderPointer(startPos);
+                dragging = (activeDirt != null);
+            }
+        }
+
+        if (Input.GetMouseButton(0) && dragging && useBrushMode)
+        {
+            Vector2 currentPos = Input.mousePosition;
+            
+            // Brush hareketi
+            if (Vector2.Distance(currentPos, lastBrushPos) > brushMoveThreshold)
+            {
+                ApplyBrushStroke(currentPos);
+                lastBrushPos = currentPos;
+            }
         }
 
         if (Input.GetMouseButtonUp(0) && dragging)
         {
-            Vector2 endPos = (Vector2)Input.mousePosition;
-            TryCleanBySwipe(endPos);
+            if (!useBrushMode)
+            {
+                Vector2 endPos = (Vector2)Input.mousePosition;
+                TryCleanBySwipe(endPos);
+            }
             ResetDrag();
         }
     }
@@ -123,7 +157,6 @@ public class DirtCleaner : MonoBehaviour
     {
         if (Input.touchCount == 0) return;
 
-        // UI üstü dokunuþlarý atla
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
 
         Touch t = Input.touches[0];
@@ -132,22 +165,81 @@ public class DirtCleaner : MonoBehaviour
         {
             case TouchPhase.Began:
                 startPos = t.position;
-                activeDirt = PickDirtUnderPointer(startPos);
-                dragging = (activeDirt != null);
+                lastBrushPos = startPos;
+                
+                if (useBrushMode)
+                {
+                    activeDirt = PickDirtUnderPointer(startPos);
+                    if (activeDirt != null)
+                    {
+                        activeBrushDirt = activeDirt.GetComponent<BrushErasableDirt>();
+                        dragging = (activeBrushDirt != null);
+                    }
+                }
+                else
+                {
+                    activeDirt = PickDirtUnderPointer(startPos);
+                    dragging = (activeDirt != null);
+                }
+                break;
+
+            case TouchPhase.Moved:
+                if (dragging && useBrushMode)
+                {
+                    Vector2 currentPos = t.position;
+                    if (Vector2.Distance(currentPos, lastBrushPos) > brushMoveThreshold)
+                    {
+                        ApplyBrushStroke(currentPos);
+                        lastBrushPos = currentPos;
+                    }
+                }
                 break;
 
             case TouchPhase.Ended:
             case TouchPhase.Canceled:
                 if (dragging)
                 {
-                    TryCleanBySwipe(t.position);
+                    if (!useBrushMode)
+                    {
+                        TryCleanBySwipe(t.position);
+                    }
                     ResetDrag();
                 }
                 break;
         }
     }
 
-    // -------------------- TEMÝZLEME --------------------
+    // -------------------- BRUSH MOD --------------------
+    void ApplyBrushStroke(Vector2 screenPos)
+    {
+        if (activeBrushDirt == null || activeBrushDirt.IsFullyCleaned()) return;
+
+        // Ekran pozisyonundan dÃ¼nya pozisyonu bul
+        Ray ray = cam.ScreenPointToRay(screenPos);
+        RaycastHit hit;
+        
+        if (Physics.Raycast(ray, out hit, 1000f))
+        {
+            if (hit.transform == activeDirt)
+            {
+                // FÄ±rÃ§a vuruÅŸu uygula
+                activeBrushDirt.EraseBrushStroke(hit.point);
+            }
+        }
+    }
+
+    // BrushErasableDirt tarafÄ±ndan Ã§aÄŸrÄ±lÄ±r
+    public void OnDirtCleanedByBrush(Transform dirt)
+    {
+        if (!cleaned.Contains(dirt))
+        {
+            cleaned.Add(dirt);
+            cleanedCount++;
+            UpdateProgressUI();
+        }
+    }
+
+    // -------------------- ESKÄ° SWIPE MOD --------------------
     void TryCleanBySwipe(Vector2 endPos)
     {
         if (activeDirt == null || cleaned.Contains(activeDirt)) return;
@@ -160,12 +252,10 @@ public class DirtCleaner : MonoBehaviour
 
             float finalDuration = GetCurrentCleanDuration();
 
-            // DOTween animasyonu: scale 0'a küçül (süre inspector'dan ayarlý)
             activeDirt.DOScale(Vector3.zero, finalDuration)
                       .SetEase(cleanEase)
                       .OnComplete(() =>
                       {
-                          // Temizleme tamamlandý say
                           cleanedCount = Mathf.Max(cleanedCount, 0) + 1;
                           UpdateProgressUI();
 
@@ -177,7 +267,6 @@ public class DirtCleaner : MonoBehaviour
 
     float GetCurrentCleanDuration()
     {
-        // final = base * multiplier^(level-1)
         int lvl = Mathf.Max(1, currentLevel);
         float mult = Mathf.Max(0.01f, levelDurationMultiplier);
         float baseDur = Mathf.Max(0.01f, baseCleanDuration);
@@ -188,17 +277,18 @@ public class DirtCleaner : MonoBehaviour
     {
         dragging = false;
         activeDirt = null;
+        activeBrushDirt = null;
     }
 
-    // -------------------- RAYCAST (2D/3D destekli) --------------------
+    // -------------------- RAYCAST --------------------
     Transform PickDirtUnderPointer(Vector2 screenPos)
     {
-        // Önce 2D collider var mý diye dene
+        // 2D collider kontrolÃ¼
         Vector3 wp = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
         Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
         if (hits2D != null && hits2D.Length > 0)
         {
-            for (int i = hits2D.Length - 1; i >= 0; i--) // üstteki önce
+            for (int i = hits2D.Length - 1; i >= 0; i--)
             {
                 Transform tr = hits2D[i].transform;
                 if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
@@ -206,12 +296,11 @@ public class DirtCleaner : MonoBehaviour
             }
         }
 
-        // 3D collider için raycast
+        // 3D collider raycast
         Ray ray = cam.ScreenPointToRay(screenPos);
         RaycastHit[] hits3D = Physics.RaycastAll(ray, 1000f);
         if (hits3D != null && hits3D.Length > 0)
         {
-            // Ekrana en yakýn olaný seç
             System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var hit in hits3D)
             {
@@ -223,10 +312,9 @@ public class DirtCleaner : MonoBehaviour
         return null;
     }
 
-    // -------------------- ÝLERLEME / UI --------------------
+    // -------------------- Ä°LERLEME / UI --------------------
     void UpdateProgressUI()
     {
-        // total 0 ise bar’ý gizlemek istersen:
         if (cleanProgressBar)
             cleanProgressBar.gameObject.SetActive(totalDirtPlanned > 0);
 
@@ -237,7 +325,6 @@ public class DirtCleaner : MonoBehaviour
         if (cleanProgressBar)
             cleanProgressBar.value = ratio;
 
-        // yüzde metni: hem Text hem TMP_Text’i destekleyelim
         if (progressTextGraphic)
         {
             string pct = Mathf.RoundToInt(ratio * 100f) + "%";
@@ -257,14 +344,13 @@ public class DirtCleaner : MonoBehaviour
         }
     }
 
-    // -------------------- YARDIMCI: Liste yönetimi --------------------
+    // -------------------- YARDIMCI --------------------
     public void AddDirt(Transform dirt)
     {
         if (dirt == null) return;
         if (!dirtItems.Contains(dirt))
         {
             dirtItems.Add(dirt);
-            // temizlenmemiþ yeni hedef ekleniyorsa toplamý artýr
             if (!cleaned.Contains(dirt))
                 totalDirtPlanned++;
             UpdateProgressUI();
@@ -282,11 +368,9 @@ public class DirtCleaner : MonoBehaviour
             totalDirtPlanned--;
 
         cleaned.Remove(dirt);
-
         UpdateProgressUI();
     }
 
-    // Ýstersen harici yerden “tekrar hesapla” çaðýrabilmen için:
     public void RecalculateTotalsFromList()
     {
         var seen = new HashSet<Transform>();
@@ -296,7 +380,6 @@ public class DirtCleaner : MonoBehaviour
             if (t != null && !cleaned.Contains(t) && seen.Add(t))
                 newPlanned++;
         }
-        // total = temizlenenler + geriye kalanlar
         totalDirtPlanned = cleanedCount + newPlanned;
         UpdateProgressUI();
     }
