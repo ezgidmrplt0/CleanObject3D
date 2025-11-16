@@ -10,9 +10,9 @@ public class DirtCleaner : MonoBehaviour
 {
     [Header("Bağlantılar")]
     public Camera cam;
-    [Tooltip("Kamera açıkken temizleme yapılsın mı?")]
+    [Tooltip("Kamera açıkken temizleme yapılsın mı? (false = her zaman, true = sadece kamera kilitliyken)")]
     public bool onlyWhenCameraLocked = true;
-    public MonoBehaviour cameraController;
+    public MonoBehaviour cameraController;   // MobileCameraController vb.
 
     [Header("Kir Listesi")]
     [Tooltip("Sahneden kir GameObject'lerini buraya sürükle-bırak.")]
@@ -21,7 +21,7 @@ public class DirtCleaner : MonoBehaviour
     [Header("Temizleme Modu")]
     [Tooltip("Brush (fırça) modu mu, yoksa eski Swipe modu mu?")]
     public bool useBrushMode = true;
-    
+
     [Header("Brush Ayarları (Brush Mode İçin)")]
     [Tooltip("Fırça hareketi için minimum mesafe (piksel)")]
     public float brushMoveThreshold = 5f;
@@ -87,33 +87,48 @@ public class DirtCleaner : MonoBehaviour
 
     void Update()
     {
-        if (onlyWhenCameraLocked && cameraController != null)
+        // >>> BURASI ÖNEMLİ <<<
+        // Kamera AÇIKSA (controlsEnabled == true) hiç temizleme yapma
+        if (!CanCleanNow())
         {
-            var field = cameraController.GetType().GetField("controlsEnabled");
-            if (field != null)
-            {
-                bool controlsEnabled = (bool)field.GetValue(cameraController);
-                if (controlsEnabled) { ResetDrag(); return; }
-            }
+            ResetDrag();
+            return;
         }
 
-#if UNITY_EDITOR || UNITY_STANDALONE
+        // Hem PC hem mobil girişleri aynı anda kontrol ediyoruz
         HandleMouse();
-#else
         HandleTouch();
-#endif
+    }
+
+    // Kamera kapalı mı, temizleme izni var mı kontrolü
+    bool CanCleanNow()
+    {
+        if (!onlyWhenCameraLocked) return true;          // kilitleme devre dışıysa her zaman izin ver
+        if (cameraController == null) return true;       // controller yoksa engelleme
+
+        var field = cameraController.GetType().GetField("controlsEnabled");
+        if (field == null) return true;                  // alan bulunamazsa engelleme
+
+        bool controlsEnabled = (bool)field.GetValue(cameraController);
+        // controlsEnabled == true  -> kamera hareket ediyor, temizleme YOK
+        // controlsEnabled == false -> kamera kilitli, temizleme VAR
+        return !controlsEnabled;
     }
 
     // -------------------- INPUT --------------------
     void HandleMouse()
     {
+        // Mouse yoksa ya da hiçbir buton kullanılmıyorsa boşuna devam etme
+        if (!Input.GetMouseButtonDown(0) && !Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0))
+            return;
+
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (Input.GetMouseButtonDown(0))
         {
             startPos = Input.mousePosition;
             lastBrushPos = startPos;
-            
+
             if (useBrushMode)
             {
                 activeDirt = PickDirtUnderPointer(startPos);
@@ -133,7 +148,7 @@ public class DirtCleaner : MonoBehaviour
         if (Input.GetMouseButton(0) && dragging && useBrushMode)
         {
             Vector2 currentPos = Input.mousePosition;
-            
+
             // Brush hareketi
             if (Vector2.Distance(currentPos, lastBrushPos) > brushMoveThreshold)
             {
@@ -166,7 +181,7 @@ public class DirtCleaner : MonoBehaviour
             case TouchPhase.Began:
                 startPos = t.position;
                 lastBrushPos = startPos;
-                
+
                 if (useBrushMode)
                 {
                     activeDirt = PickDirtUnderPointer(startPos);
@@ -217,7 +232,7 @@ public class DirtCleaner : MonoBehaviour
         // Ekran pozisyonundan dünya pozisyonu bul
         Ray ray = cam.ScreenPointToRay(screenPos);
         RaycastHit hit;
-        
+
         if (Physics.Raycast(ray, out hit, 1000f))
         {
             if (hit.transform == activeDirt)
