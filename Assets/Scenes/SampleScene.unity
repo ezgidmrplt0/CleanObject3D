@@ -644,7 +644,12 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 13077855915198047, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
   m_PrefabInstance: {fileID: 1292313524}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &493546299
+--- !u!4 &493546300 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 821245648875527397, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
+  m_PrefabInstance: {fileID: 1292313524}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &493546305
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -653,12 +658,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 493546293}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8051a651eae9cec4ea5d7616b6d7e5e9, type: 3}
+  m_Script: {fileID: 11500000, guid: e2ac055337d973048b20761f1cca6ba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transparentAlpha: 0.3
-  cameraController: {fileID: 0}
-  onlyWhenCameraLocked: 1
+  lockY: 1
+  pickRayDistance: 1000
+  ignoreWhenPointerOverUI: 1
+  limitMovement: 1
+  movementCenter: {fileID: 493546300}
+  centerOffset: {x: 1, y: 1, z: 1}
+  limitShape: 0
+  maxRadius: 2
+  maxRectangleHalfSize: {x: 2, y: 1}
+  highlightMaterial: {fileID: 0}
 --- !u!1 &514804091
 GameObject:
   m_ObjectHideFlags: 0
@@ -1388,6 +1400,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 13077855915198047, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
+      propertyPath: m_TagString
+      value: Movable
+      objectReference: {fileID: 0}
     - target: {fileID: 6620343383841487137, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       propertyPath: m_Name
       value: Bathroom
@@ -1508,7 +1524,7 @@ PrefabInstance:
       addedObject: {fileID: 91613131}
     - targetCorrespondingSourceObject: {fileID: 13077855915198047, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 493546299}
+      addedObject: {fileID: 493546305}
     - targetCorrespondingSourceObject: {fileID: 4373658510483864402, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 364726483}

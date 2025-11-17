@@ -40,6 +40,7 @@ public class CleanModeCamera : MonoBehaviour
     bool cachedUseBrush;
     bool cachedOnlyWhenLocked;
 
+
     void Awake()
     {
         if (!cam) cam = GetComponent<Camera>();
@@ -66,17 +67,20 @@ public class CleanModeCamera : MonoBehaviour
 
     void Update()
     {
-        if (!controlsEnabled) return; // Kamera kilitliyken hiçbir giriş işleme
-
+        if (controlsEnabled)
+        {
 #if UNITY_EDITOR || UNITY_STANDALONE
-        HandleMousePC();
+            HandleMousePC();
 #endif
-        HandleTouchMobile();
+            HandleTouchMobile();
 
-        if (cam && Mathf.Abs(targetOrtho - cam.orthographicSize) > 0.0001f)
-            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetOrtho, 0.3f);
+            if (cam && Mathf.Abs(targetOrtho - cam.orthographicSize) > 0.0001f)
+                cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetOrtho, 0.3f);
 
-        if (clampToBounds) ClampCameraToBounds();
+            if (clampToBounds) ClampCameraToBounds();
+        }
+        // Temizlik modu aktifken kamera hareketini kilitlemek yeterli;
+        // nesne sürükleme `MovableInCleanMode` gibi ayrı scriptlerce yönetilir.
     }
 
     // ---------------- PC ----------------
@@ -228,4 +232,5 @@ public class CleanModeCamera : MonoBehaviour
             toggleOn = false;
         }
     }
+
 }
