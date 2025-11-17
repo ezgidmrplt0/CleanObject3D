@@ -106,13 +106,33 @@ public class DirtCleaner : MonoBehaviour
         if (!onlyWhenCameraLocked) return true;          // kilitleme devre dışıysa her zaman izin ver
         if (cameraController == null) return true;       // controller yoksa engelleme
 
-        var field = cameraController.GetType().GetField("controlsEnabled");
-        if (field == null) return true;                  // alan bulunamazsa engelleme
+        var t = cameraController.GetType();
 
-        bool controlsEnabled = (bool)field.GetValue(cameraController);
-        // controlsEnabled == true  -> kamera hareket ediyor, temizleme YOK
-        // controlsEnabled == false -> kamera kilitli, temizleme VAR
-        return !controlsEnabled;
+        // MobileCameraController: public bool controlsEnabled
+        var fControls = t.GetField("controlsEnabled", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        if (fControls != null && fControls.FieldType == typeof(bool))
+        {
+            bool controlsEnabled = (bool)fControls.GetValue(cameraController);
+            return !controlsEnabled; // kamera kilitliyse (false) temizleme VAR
+        }
+
+        // FreeCameraController: private bool inputEnabled
+        var fInput = t.GetField("inputEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+        if (fInput != null && fInput.FieldType == typeof(bool))
+        {
+            bool inputEnabled = (bool)fInput.GetValue(cameraController);
+            return !inputEnabled; // input kapalıysa temizleme VAR
+        }
+
+        // Son çare: Camera.enabled durumu (FreeCameraController ToggleCamera ile senkron)
+        var camComp = cameraController.GetComponent<Camera>();
+        if (camComp != null)
+        {
+            return !camComp.enabled;
+        }
+
+        // Bilgi yoksa engelleme yapma
+        return true;
     }
 
     // -------------------- INPUT --------------------
