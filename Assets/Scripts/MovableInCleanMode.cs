@@ -45,7 +45,7 @@ public class MovableInCleanMode : MonoBehaviour
             originalMats = rend.sharedMaterials;
         }
 
-        initialCenter = ResolveCenterPosition();
+        initialCenter = transform.position;
     }
 
     void Update()
@@ -166,24 +166,25 @@ public class MovableInCleanMode : MonoBehaviour
     }
 
     Vector3 ClampToLimits(Vector3 worldPos)
-    {
-        Vector3 center = movementCenter ? movementCenter.position + centerOffset : initialCenter;
-        Vector3 flatDelta = new Vector3(worldPos.x - center.x, 0f, worldPos.z - center.z);
-        if (limitShape == LimitShape.Circle)
-        {
-            float max = Mathf.Max(0.0001f, maxRadius);
-            if (flatDelta.sqrMagnitude > max * max)
-            {
-                flatDelta = flatDelta.normalized * max;
-            }
-        }
-        else // Rectangle
-        {
-            Vector2 halfSize = new Vector2(Mathf.Max(0f, maxRectangleHalfSize.x), Mathf.Max(0f, maxRectangleHalfSize.y));
-            flatDelta.x = Mathf.Clamp(flatDelta.x, -halfSize.x, halfSize.x);
-            flatDelta.z = Mathf.Clamp(flatDelta.z, -halfSize.y, halfSize.y);
-        }
+{
+    Vector3 center = initialCenter;  // ← sadece bu!
 
-        return new Vector3(center.x + flatDelta.x, worldPos.y, center.z + flatDelta.z);
+    Vector3 flatDelta = new Vector3(worldPos.x - center.x, 0f, worldPos.z - center.z);
+
+    if (limitShape == LimitShape.Circle)
+    {
+        float max = Mathf.Max(0.0001f, maxRadius);
+        if (flatDelta.sqrMagnitude > max * max)
+            flatDelta = flatDelta.normalized * max;
     }
+    else
+    {
+        Vector2 halfSize = maxRectangleHalfSize;
+        flatDelta.x = Mathf.Clamp(flatDelta.x, -halfSize.x, halfSize.x);
+        flatDelta.z = Mathf.Clamp(flatDelta.z, -halfSize.y, halfSize.y);
+    }
+
+    return new Vector3(center.x + flatDelta.x, worldPos.y, center.z + flatDelta.z);
+}
+
 }
