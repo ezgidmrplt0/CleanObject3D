@@ -15,6 +15,10 @@ public class BrushErasableDirt : MonoBehaviour
     [Range(0.5f, 0.99f)]
     public float cleanThreshold = 0.85f;
     
+    [Tooltip("Her fırça vuruşunda ne kadar silinsin (0.05-0.5 arası tipik).")]
+    [Range(0.01f, 0.5f)]
+    public float eraseStrength = 0.3f;
+    
     [Header("Otomatik Ayarlar")]
     [Tooltip("RenderTexture çözünürlüğü (mobil için 256 yeterli)")]
     public int textureResolution = 256;
@@ -218,7 +222,7 @@ public class BrushErasableDirt : MonoBehaviour
                         
                         // Mevcut değeri koyulaştır
                         float currentValue = pixels[index].r;
-                        float newValue = currentValue * (1f - alpha * 0.3f); // Kademeli karartma
+                        float newValue = currentValue * (1f - alpha * eraseStrength);
                         pixels[index] = new Color(newValue, newValue, newValue, 1f);
                     }
                 }

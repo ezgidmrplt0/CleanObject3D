@@ -30,6 +30,23 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
     [Header("Bağlantılar")]
     public DirtCleaner dirtCleaner;
 
+    [Header("Level Takibi")]
+    public TextMeshProUGUI levelText; // Ekranda gösterilecek level yazısı
+    public string playerPrefsLevelKey = "CurrentLevel";
+
+    [Header("Zorluk Ayarları")]
+    [Tooltip("Her 5 levelde bir artan zorluk adımında cleanThreshold'a eklenecek değer.")]
+    public float thresholdPerStep = 0.03f;
+
+    [Tooltip("Her 5 levelde bir artan zorluk adımında brushSize'e uygulanacak çarpan (0.9-1 arası, küçültmek için <1).")]
+    public float brushSizeFactorPerStep = 0.95f;
+
+    [Tooltip("Temizlenme eşiği için üst sınır.")]
+    public float maxCleanThreshold = 0.98f;
+
+    [Tooltip("Fırça boyutu için alt sınır.")]
+    public float minBrushSize = 0.15f;
+
     [Header("Level Bittiğinde")]
     public GameObject nextButton;   // Level bitince açılacak buton
 
@@ -39,6 +56,13 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
 
     void Start()
     {
+        // Level bilgisini yükle ve UI'ı güncelle
+        int currentLevel = PlayerPrefs.GetInt(playerPrefsLevelKey, 1);
+        if (levelText)
+            levelText.text = "Level " + currentLevel;
+
+        ApplyDifficultyForLevel(currentLevel);
+
         UpdateCoinsUI();
         if (!dirtCleaner) dirtCleaner = FindObjectOfType<DirtCleaner>();
         if (dirtCleaner != null)
@@ -86,6 +110,16 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
     ApplyStarSprite(stars);
     AddCoinsForStars(stars);
 
+    // Level'i artır
+    int currentLevel = PlayerPrefs.GetInt(playerPrefsLevelKey, 1);
+    currentLevel++;
+    PlayerPrefs.SetInt(playerPrefsLevelKey, currentLevel);
+    PlayerPrefs.Save();
+
+    // Bir sonraki oyunda level metninin güncellenmesi için isteğe bağlı hemen güncelle
+    if (levelText)
+        levelText.text = "Level " + currentLevel;
+
     if (nextButton) nextButton.SetActive(true); // LEVEL BİTİNCE GÖSTER
     }
 
@@ -129,6 +163,29 @@ void UpdateCoinsUI()
 
         starsImage.sprite = s;
         starsImage.enabled = (s != null);
+    }
+
+    void ApplyDifficultyForLevel(int level)
+    {
+        // Her 5 levelde bir zorluk artsın: kirler daha zor silinsin
+        int step = Mathf.Max(0, (level - 1) / 5);
+        if (step == 0) return; // ilk 5 level temel ayar
+
+        BrushErasableDirt[] dirts = FindObjectsOfType<BrushErasableDirt>();
+
+        foreach (var dirt in dirts)
+        {
+            if (!dirt) continue;
+
+            // Temizlenme eşiğini artır (daha çok silmek gereksin)
+            float extraThreshold = thresholdPerStep * step;
+            dirt.cleanThreshold = Mathf.Clamp01(dirt.cleanThreshold + extraThreshold);
+            dirt.cleanThreshold = Mathf.Min(dirt.cleanThreshold, maxCleanThreshold);
+
+            // Fırça boyutunu biraz küçült (her stroke daha az alan silsin)
+            float sizeFactor = Mathf.Pow(brushSizeFactorPerStep, step);
+            dirt.brushSize = Mathf.Max(minBrushSize, dirt.brushSize * sizeFactor);
+        }
     }
 
     // Şimdilik: level bitince açılan butondan çağırılacak, aynı leveli yeniden yükler

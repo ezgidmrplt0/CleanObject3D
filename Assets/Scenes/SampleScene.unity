@@ -1489,6 +1489,7 @@ MonoBehaviour:
   brushSize: 5
   brushHardness: 0.5
   cleanThreshold: 0.85
+  eraseStrength: 0.3
   textureResolution: 256
 --- !u!1 &1076154780 stripped
 GameObject:
@@ -2145,6 +2146,7 @@ MonoBehaviour:
   brushSize: 5
   brushHardness: 0.5
   cleanThreshold: 0.85
+  eraseStrength: 0.3
   textureResolution: 256
 --- !u!1 &1592404741
 GameObject:
@@ -2422,6 +2424,7 @@ MonoBehaviour:
   brushSize: 5
   brushHardness: 0.5
   cleanThreshold: 0.85
+  eraseStrength: 0.3
   textureResolution: 256
 --- !u!1 &1599332315 stripped
 GameObject:
@@ -2520,6 +2523,12 @@ MonoBehaviour:
   sprite2Stars: {fileID: 21300000, guid: 6d35fb6409b8afa3aa8317b21ecdc830, type: 3}
   sprite3Stars: {fileID: 21300000, guid: 5ae111fbcd4a95155b27f43f963d1469, type: 3}
   dirtCleaner: {fileID: 514804093}
+  levelText: {fileID: 1269444774}
+  playerPrefsLevelKey: CurrentLevel
+  thresholdPerStep: 0.03
+  brushSizeFactorPerStep: 0.7
+  maxCleanThreshold: 0.98
+  minBrushSize: 0.15
   nextButton: {fileID: 1948575202}
 --- !u!1 &1948575202
 GameObject:
@@ -2851,6 +2860,7 @@ MonoBehaviour:
   brushSize: 5
   brushHardness: 0.5
   cleanThreshold: 0.85
+  eraseStrength: 0.3
   textureResolution: 256
 --- !u!1 &2062617776 stripped
 GameObject:
