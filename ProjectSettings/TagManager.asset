@@ -5,6 +5,12 @@ TagManager:
   serializedVersion: 2
   tags:
   - Movable
+  - MusteriSpawn
+  - MusteriKasa
+  - MusteriSatis
+  - MusteriSilinme
+  - Oyuncu
+  - Musteri
   layers:
   - Default
   - TransparentFX
