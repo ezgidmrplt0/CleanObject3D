@@ -21,6 +21,16 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
 
     void Awake()
     {
+        // Kamera controller'ı atanmadıysa, ana kameradan otomatik bulmayı dene
+        if (cameraController == null && Camera.main != null)
+        {
+            // Ana kameradaki herhangi bir MonoBehaviour değil,
+            // özellikle CleanModeCamera'yı (veya türevini) bul.
+            var cleanMode = Camera.main.GetComponent<CleanModeCamera>();
+            if (cleanMode != null)
+                cameraController = cleanMode;
+        }
+
         // Collider’lar
         colliders.AddRange(GetComponentsInChildren<Collider>());
         colliders2D.AddRange(GetComponentsInChildren<Collider2D>());
@@ -67,19 +77,21 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
     // ------------------ Kamera durumunu kontrol et ------------------
     bool CameraAllowsInteraction()
     {
-        if (!onlyWhenCameraLocked || cameraController == null)
+        if (!onlyWhenCameraLocked)
             return true;
 
-        // MobileCameraController içindeki "controlsEnabled" alanını reflection ile okuyalım
-        var field = cameraController.GetType().GetField("controlsEnabled");
+        if (cameraController == null)
+            return false; // Kamera atanmamışsa güvenlik için kapat
+
+        var field = cameraController.GetType().GetField(
+            "controlsEnabled",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+        );
         if (field == null)
-            return true; // alan yoksa engelleme
+            return false; // Alan yoksa da izin verme
 
         bool controlsEnabled = (bool)field.GetValue(cameraController);
-
-        // controlsEnabled = true  → kamera serbest, etkileşime izin verme
-        // controlsEnabled = false → kamera kilitli, etkileşime izin ver
-        return !controlsEnabled;
+        return !controlsEnabled; // sadece kilitliyken (false) izin ver
     }
 
     // ------------------ TOGGLE ------------------
@@ -99,14 +111,19 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
 
         Ray ray = cam.ScreenPointToRay(screenPos);
 
-        // 3D
-        if (Physics.Raycast(ray, out RaycastHit hit3D, 2000f))
+        // 3D – tüm çarpmaları al, en yakını bizim objeyse kabul et
+        RaycastHit[] hits3D = Physics.RaycastAll(ray, 2000f);
+        if (hits3D != null && hits3D.Length > 0)
         {
-            if (hit3D.transform == transform || hit3D.transform.IsChildOf(transform))
-                return true;
+            System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
+            foreach (var h in hits3D)
+            {
+                if (h.transform == transform || h.transform.IsChildOf(transform))
+                    return true;
+            }
         }
 
-        // 2D
+        // 2D aynı kalsın
         Vector3 wp = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 10f));
         Collider2D hit2D = Physics2D.OverlapPoint(wp);
         if (hit2D != null)

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 // Tek scriptte: Basit kamera kontrolü + Temizlik modu kilidi
 // - controlsEnabled == true  -> kamera hareket eder, temizlik çalışmaz (DirtCleaner bunu görür)
@@ -10,6 +11,14 @@ public class CleanModeCamera : MonoBehaviour
     [Header("Bağlantılar")]
     public Camera cam;                   // Otomatik bulunur
     public DirtCleaner dirtCleaner;      // Sahnedeki DirtCleaner (opsiyonel)
+
+    [Header("UI - Temizlik Toggle Butonu")]
+    [Tooltip("Temizlik / kamera modunu açıp kapatan butonun Image'i")]
+    public Image cleanToggleImage;
+    [Tooltip("Kamera hareket modunda görünecek icon")]
+    public Sprite cameraModeSprite;
+    [Tooltip("Temizlik modunda görünecek icon")]
+    public Sprite cleanModeSprite;
 
     [Header("Kontrol Durumu")] 
     [Tooltip("true: Kamera hareket eder (temizlik kapalı) / false: Kamera kilitli (temizlik açık)")]
@@ -63,6 +72,9 @@ public class CleanModeCamera : MonoBehaviour
         }
 
         if (cam) targetOrtho = cam.orthographicSize;
+
+        // Başlangıçta icon'u mevcut moda göre ayarla
+        UpdateToggleIcon();
     }
 
     void Update()
@@ -193,6 +205,10 @@ public class CleanModeCamera : MonoBehaviour
             dirtCleaner.onlyWhenCameraLocked = true; // kilitliyken temizlik açık
             dirtCleaner.useBrushMode = true;         // Brush tercih – istersen kapat
         }
+
+        // Temizlik modu aktif
+        toggleOn = true;
+        UpdateToggleIcon();
     }
 
     public void OnCleanButtonUp()
@@ -203,6 +219,10 @@ public class CleanModeCamera : MonoBehaviour
             dirtCleaner.useBrushMode = cachedUseBrush;
             dirtCleaner.onlyWhenCameraLocked = cachedOnlyWhenLocked;
         }
+
+        // Kamera moduna geri dön
+        toggleOn = false;
+        UpdateToggleIcon();
     }
 
     // Toggle yaklaşımı: UI Button OnClick -> OnCleanToggle
@@ -230,6 +250,25 @@ public class CleanModeCamera : MonoBehaviour
                 dirtCleaner.onlyWhenCameraLocked = cachedOnlyWhenLocked;
             }
             toggleOn = false;
+        }
+
+        UpdateToggleIcon();
+    }
+
+    // UI buton icon'unu mod durumuna göre güncelle
+    void UpdateToggleIcon()
+    {
+        if (!cleanToggleImage) return;
+
+        if (!toggleOn)
+        {
+            if (cameraModeSprite)
+                cleanToggleImage.sprite = cameraModeSprite;
+        }
+        else
+        {
+            if (cleanModeSprite)
+                cleanToggleImage.sprite = cleanModeSprite;
         }
     }
 

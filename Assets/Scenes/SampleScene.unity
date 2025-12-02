@@ -741,16 +741,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2ac055337d973048b20761f1cca6ba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lockY: 1
-  pickRayDistance: 1000
-  ignoreWhenPointerOverUI: 1
-  limitMovement: 1
-  movementCenter: {fileID: 493546300}
-  centerOffset: {x: 1, y: 1, z: 1}
-  limitShape: 0
-  maxRadius: 0.5
-  maxRectangleHalfSize: {x: 1, y: 1}
-  highlightMaterial: {fileID: 0}
+  targetPoint: {fileID: 835385088}
+  moveDuration: 0.3
+  onlyWhenCameraActive: 1
 --- !u!1 &514804091
 GameObject:
   m_ObjectHideFlags: 0
@@ -1019,6 +1012,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 1ad9c55396de6984aa204e5460a3ef1e, type: 2}
+    - target: {fileID: 8255224628661558217, guid: 03f31e0fc17ffa847bc9ac5d2d874f44, type: 3}
+      propertyPath: cleanThreshold
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1297,26 +1294,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &779648808 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6642442263835363696, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
-  m_PrefabInstance: {fileID: 1292313524}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &779648814
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 779648808}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8051a651eae9cec4ea5d7616b6d7e5e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  transparentAlpha: 0.3
-  cameraController: {fileID: 963194229}
-  onlyWhenCameraLocked: 1
 --- !u!1 &814248856 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1834973795895634127, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
@@ -1337,6 +1314,37 @@ MonoBehaviour:
   transparentAlpha: 0.3
   cameraController: {fileID: 0}
   onlyWhenCameraLocked: 1
+--- !u!1 &835385087
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 835385088}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &835385088
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 835385087}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.17, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 493546300}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &840269781 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 468904656213357643, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
@@ -1504,6 +1512,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cam: {fileID: 0}
   dirtCleaner: {fileID: 514804093}
+  cleanToggleImage: {fileID: 231060228}
+  cameraModeSprite: {fileID: 21300000, guid: bf75ead70da2fa1fe8c82d0e993a5be1, type: 3}
+  cleanModeSprite: {fileID: 21300000, guid: b3e3ba1147f6ad99db43a1dec2be00e5, type: 3}
   controlsEnabled: 1
   panSpeed: 1
   blockWhenPointerOverUI: 1
@@ -1766,7 +1777,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 821245648875527397, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 835385088}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2212847855239936688, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       insertIndex: -1
@@ -1795,9 +1809,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 454850788422317992, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 212847346}
-    - targetCorrespondingSourceObject: {fileID: 6642442263835363696, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 779648814}
     - targetCorrespondingSourceObject: {fileID: 4618465423153683582, guid: 4a2a199951e03ea4cb777c5aaa773e0f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1313028391}
@@ -2714,6 +2725,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 1ad9c55396de6984aa204e5460a3ef1e, type: 2}
+    - target: {fileID: 8255224628661558217, guid: 03f31e0fc17ffa847bc9ac5d2d874f44, type: 3}
+      propertyPath: cleanThreshold
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
