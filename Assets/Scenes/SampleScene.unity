@@ -195,6 +195,7 @@ MonoBehaviour:
   spawnScale: {x: 0.6, y: 0.6, z: 0.6}
   currentLevel: 1
   dirtCleaner: {fileID: 0}
+  currentRoomInstance: {fileID: 0}
 --- !u!4 &136999827
 Transform:
   m_ObjectHideFlags: 0

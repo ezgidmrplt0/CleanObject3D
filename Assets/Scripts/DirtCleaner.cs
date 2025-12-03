@@ -339,9 +339,8 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- RAYCAST --------------------
     Transform PickDirtUnderPointer(Vector2 screenPos)
     {
-        // Önce 3D raycast dene (daha güvenilir)
+        // 3D raycast
         Ray ray = cam.ScreenPointToRay(screenPos);
-        
         RaycastHit[] hits3D = Physics.RaycastAll(ray, 1000f);
         
         if (hits3D != null && hits3D.Length > 0)
@@ -349,22 +348,10 @@ public class DirtCleaner : MonoBehaviour
             System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var hit in hits3D)
             {
-                // Direkt olarak hit objesinin kendisi veya parent'ı dirtItems'ta mı kontrol et
+                // dirtItems listesinde var mı kontrol et (parent zinciri dahil)
                 Transform found = FindDirtInHierarchy(hit.transform);
                 if (found != null)
                     return found;
-                
-                // Ayrıca hit objesinde BrushErasableDirt var mı kontrol et
-                var brushDirt = hit.transform.GetComponent<BrushErasableDirt>();
-                if (brushDirt == null)
-                    brushDirt = hit.transform.GetComponentInParent<BrushErasableDirt>();
-                
-                if (brushDirt != null && !cleaned.Contains(brushDirt.transform))
-                {
-                    if (!dirtItems.Contains(brushDirt.transform))
-                        dirtItems.Add(brushDirt.transform);
-                    return brushDirt.transform;
-                }
             }
         }
 
@@ -381,17 +368,6 @@ public class DirtCleaner : MonoBehaviour
                 Transform found = FindDirtInHierarchy(hits2D[i].transform);
                 if (found != null)
                     return found;
-                
-                var brushDirt = hits2D[i].GetComponent<BrushErasableDirt>();
-                if (brushDirt == null)
-                    brushDirt = hits2D[i].GetComponentInParent<BrushErasableDirt>();
-                
-                if (brushDirt != null && !cleaned.Contains(brushDirt.transform))
-                {
-                    if (!dirtItems.Contains(brushDirt.transform))
-                        dirtItems.Add(brushDirt.transform);
-                    return brushDirt.transform;
-                }
             }
         }
 
