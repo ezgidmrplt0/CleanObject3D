@@ -40,6 +40,10 @@ public class DirtCleaner : MonoBehaviour
     [Header("Olaylar")]
     public UnityEvent onAllCleaned;
 
+    [Header("Brush Efektleri")]
+    public ParticleSystem foamPrefab;
+    public float foamLifetime = 1f;
+
     // >>> Fırça elde mi? (BrushUIController burayı değiştiriyor)
     [HideInInspector] public bool brushEquipped = false;
 
@@ -247,6 +251,11 @@ public class DirtCleaner : MonoBehaviour
             if (hit.transform == activeDirt)
             {
                 activeBrushDirt.EraseBrushStroke(hit.point);
+                if (foamPrefab != null)
+                {
+                    var ps = Instantiate(foamPrefab, hit.point, Quaternion.identity);
+                    Destroy(ps.gameObject, foamLifetime);
+                }
             }
         }
     }
