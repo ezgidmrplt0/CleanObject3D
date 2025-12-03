@@ -12,6 +12,11 @@ public class RoomLevelManager : MonoBehaviour
     [Header("Oda Parent'ı (opsiyonel)")]
     public Transform roomParent;
 
+    [Header("Oda Transform Ayarları")]
+    public Vector3 spawnPosition = new Vector3(-1.4f, 4.5f, -4f);
+    public Vector3 spawnRotation = new Vector3(0f, -131.175f, 0f);
+    public Vector3 spawnScale = new Vector3(0.6f, 0.6f, 0.6f);
+
     [Header("Level Bilgisi")]
     [Min(1)] public int currentLevel = 1;
 
@@ -63,12 +68,13 @@ public class RoomLevelManager : MonoBehaviour
         }
 
         // Yeni odayı instantiate et
-        Transform parent = roomParent != null ? roomParent : transform;
+        Transform parent = roomParent != null ? roomParent : null;
         currentRoomInstance = Instantiate(prefab, parent);
 
-        // Pozisyonu istersen sıfırla
-        currentRoomInstance.transform.localPosition = Vector3.zero;
-        currentRoomInstance.transform.localRotation = Quaternion.identity;
+        // Belirlenen transform ayarlarını uygula
+        currentRoomInstance.transform.position = spawnPosition;
+        currentRoomInstance.transform.rotation = Quaternion.Euler(spawnRotation);
+        currentRoomInstance.transform.localScale = spawnScale;
 
         SetupDirtCleanerForRoom();
     }

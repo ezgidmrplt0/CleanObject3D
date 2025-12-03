@@ -46,6 +46,7 @@ public class BrushUIController : MonoBehaviour
     void Update()
     {
         if (!equipped) return;
+        if (brushFollowImage == null) return;
 
         Vector3 pos;
 
@@ -94,15 +95,10 @@ public class BrushUIController : MonoBehaviour
 
         if (dirtCleaner != null)
             dirtCleaner.SetBrushEquipped(equipped);
-        else
-        {
-            Debug.LogWarning("[BrushUI] ToggleBrush: dirtCleaner REFERANSI YOK!");
-        }
 
-        // Takip eden f�r�a a��k/kapal�
-        brushFollowImage.gameObject.SetActive(equipped);
+        if (brushFollowImage != null)
+            brushFollowImage.gameObject.SetActive(equipped);
 
-        // Durumu PlayerPrefs'te sakla
         PlayerPrefs.SetInt("BrushEquipped", equipped ? 1 : 0);
         PlayerPrefs.Save();
     }
