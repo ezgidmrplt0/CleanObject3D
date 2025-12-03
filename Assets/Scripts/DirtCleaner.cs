@@ -81,6 +81,10 @@ public class DirtCleaner : MonoBehaviour
         // Kamera uygun değilse veya fırça elde değilse temizleme yok
         if (!CanCleanNow() || !brushEquipped)
         {
+            if (!CanCleanNow())
+                Debug.Log("[DirtCleaner] CanCleanNow() = false, temizlik pasif (kamera modu veya ayar).");
+            if (!brushEquipped)
+                Debug.Log("[DirtCleaner] brushEquipped = false, fırça elde değil.");
             ResetDrag();
             return;
         }
@@ -146,9 +150,11 @@ public class DirtCleaner : MonoBehaviour
             if (useBrushMode)
             {
                 activeDirt = PickDirtUnderPointer(startPos);
+                Debug.Log("[DirtCleaner] MouseDown, activeDirt = " + (activeDirt ? activeDirt.name : "null"));
                 if (activeDirt != null)
                 {
                     activeBrushDirt = activeDirt.GetComponent<BrushErasableDirt>();
+                    Debug.Log("[DirtCleaner] activeBrushDirt = " + (activeBrushDirt ? "var" : "yok"));
                     dragging = (activeBrushDirt != null);
                 }
             }
@@ -165,6 +171,7 @@ public class DirtCleaner : MonoBehaviour
 
             if (Vector2.Distance(currentPos, lastBrushPos) > brushMoveThreshold)
             {
+                Debug.Log("[DirtCleaner] Mouse drag, ApplyBrushStroke çağrılıyor.");
                 ApplyBrushStroke(currentPos);
                 lastBrushPos = currentPos;
             }
@@ -250,12 +257,17 @@ public class DirtCleaner : MonoBehaviour
         {
             if (hit.transform == activeDirt)
             {
+                Debug.Log("[DirtCleaner] Raycast kir: " + hit.transform.name + " point=" + hit.point);
                 activeBrushDirt.EraseBrushStroke(hit.point);
                 if (foamPrefab != null)
                 {
                     var ps = Instantiate(foamPrefab, hit.point, Quaternion.identity);
                     Destroy(ps.gameObject, foamLifetime);
                 }
+            }
+            else
+            {
+                Debug.Log("[DirtCleaner] Raycast başka bir objeye çarptı: " + hit.transform.name);
             }
         }
     }

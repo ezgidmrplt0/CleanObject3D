@@ -5,10 +5,10 @@ public class BrushUIController : MonoBehaviour
 {
     [Header("Referanslar")]
     public DirtCleaner dirtCleaner;     // Sahnedeki DirtCleaner
-    public Image brushFollowImage;      // Ýmleci takip eden fýrça image
-    public Button brushButton;          // Sað alttaki fýrça butonu
+    public Image brushFollowImage;      // ï¿½mleci takip eden fï¿½rï¿½a image
+    public Button brushButton;          // Saï¿½ alttaki fï¿½rï¿½a butonu
 
-    [Header("Fýrça Spriteleri (0 = default, 1 = market fýrçasý vs.)")]
+    [Header("Fï¿½rï¿½a Spriteleri (0 = default, 1 = market fï¿½rï¿½asï¿½ vs.)")]
     public Sprite[] brushSprites;
 
     bool equipped = false;
@@ -16,21 +16,23 @@ public class BrushUIController : MonoBehaviour
 
     void Start()
     {
-        // Butona týklayýnca fýrçayý aç/kapa
+        // Butona tï¿½klayï¿½nca fï¿½rï¿½ayï¿½ aï¿½/kapa
         brushButton.onClick.AddListener(ToggleBrush);
 
-        // Baþta takip eden fýrça görünmesin
+        // Baï¿½ta takip eden fï¿½rï¿½a gï¿½rï¿½nmesin
         brushFollowImage.gameObject.SetActive(false);
         brushFollowImage.raycastTarget = false;
 
-        // PLAYERPREFS'TEN BÝLGÝYÝ ÇEK
+        // PLAYERPREFS'TEN Bï¿½LGï¿½Yï¿½ ï¿½EK
         currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);          // default 0
-        equipped = PlayerPrefs.GetInt("BrushEquipped", 0) == 1;      // default kapalý
+        equipped = PlayerPrefs.GetInt("BrushEquipped", 0) == 1;      // default kapalï¿½
 
-        // Seçili fýrçaya göre sprite'larý ayarla
+        Debug.Log($"[BrushUI] Start: currentBrushId={currentBrushId}, equipped={equipped}");
+
+        // Seï¿½ili fï¿½rï¿½aya gï¿½re sprite'larï¿½ ayarla
         ApplyCurrentBrushVisuals();
 
-        // Eðer kayýtlý durumda eldeyse, sahne açýldýðýnda da elde olsun
+        // Eï¿½er kayï¿½tlï¿½ durumda eldeyse, sahne aï¿½ï¿½ldï¿½ï¿½ï¿½nda da elde olsun
         if (equipped)
         {
             brushFollowImage.gameObject.SetActive(true);
@@ -54,14 +56,14 @@ public class BrushUIController : MonoBehaviour
         brushFollowImage.rectTransform.position = pos;
     }
 
-    // Þu anki brushId'ye göre buton ve takip eden sprite'ý ayarla
+    // ï¿½u anki brushId'ye gï¿½re buton ve takip eden sprite'ï¿½ ayarla
     void ApplyCurrentBrushVisuals()
     {
         if (brushSprites == null || brushSprites.Length == 0)
             return;
 
         if (currentBrushId < 0 || currentBrushId >= brushSprites.Length)
-            currentBrushId = 0; // güvenlik için default
+            currentBrushId = 0; // gï¿½venlik iï¿½in default
 
         Sprite s = brushSprites[currentBrushId];
 
@@ -75,7 +77,7 @@ public class BrushUIController : MonoBehaviour
             brushFollowImage.sprite = s;
     }
 
-    // Ýleride istersen koddan da fýrça deðiþtirebilirsin
+    // ï¿½leride istersen koddan da fï¿½rï¿½a deï¿½iï¿½tirebilirsin
     public void ChangeBrush(int newBrushId)
     {
         currentBrushId = newBrushId;
@@ -89,11 +91,20 @@ public class BrushUIController : MonoBehaviour
     {
         equipped = !equipped;
 
+        Debug.Log($"[BrushUI] ToggleBrush: equipped={equipped}");
+
         // Temizleme sistemini tetikle
         if (dirtCleaner != null)
+        {
+            Debug.Log("[BrushUI] ToggleBrush: DirtCleaner'e SetBrushEquipped gÃ¶nderiliyor");
             dirtCleaner.SetBrushEquipped(equipped);
+        }
+        else
+        {
+            Debug.LogWarning("[BrushUI] ToggleBrush: dirtCleaner REFERANSI YOK!");
+        }
 
-        // Takip eden fýrça açýk/kapalý
+        // Takip eden fï¿½rï¿½a aï¿½ï¿½k/kapalï¿½
         brushFollowImage.gameObject.SetActive(equipped);
 
         // Durumu PlayerPrefs'te sakla
