@@ -25,11 +25,12 @@ public class BrushUIController : MonoBehaviour
 
         // PLAYERPREFS'TEN B�LG�Y� �EK
         currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);          // default 0
-        equipped = PlayerPrefs.GetInt("BrushEquipped", 0) == 1;      // default kapal�
+        // equipped'i her zaman kapalı başlat
+        equipped = false;
+        PlayerPrefs.SetInt("BrushEquipped", 0);
+        PlayerPrefs.Save();
 
-        Debug.Log($"[BrushUI] Start: currentBrushId={currentBrushId}, equipped={equipped}");
-
-        // Se�ili f�r�aya g�re sprite'lar� ayarla
+        // Seçili fırçaya göre sprite'ları ayarla
         ApplyCurrentBrushVisuals();
 
         // E�er kay�tl� durumda eldeyse, sahne a��ld���nda da elde olsun
@@ -91,14 +92,8 @@ public class BrushUIController : MonoBehaviour
     {
         equipped = !equipped;
 
-        Debug.Log($"[BrushUI] ToggleBrush: equipped={equipped}");
-
-        // Temizleme sistemini tetikle
         if (dirtCleaner != null)
-        {
-            Debug.Log("[BrushUI] ToggleBrush: DirtCleaner'e SetBrushEquipped gönderiliyor");
             dirtCleaner.SetBrushEquipped(equipped);
-        }
         else
         {
             Debug.LogWarning("[BrushUI] ToggleBrush: dirtCleaner REFERANSI YOK!");

@@ -78,13 +78,8 @@ public class DirtCleaner : MonoBehaviour
 
     void Update()
     {
-        // Kamera uygun değilse veya fırça elde değilse temizleme yok
         if (!CanCleanNow() || !brushEquipped)
         {
-            if (!CanCleanNow())
-                Debug.Log("[DirtCleaner] CanCleanNow() = false, temizlik pasif (kamera modu veya ayar).");
-            if (!brushEquipped)
-                Debug.Log("[DirtCleaner] brushEquipped = false, fırça elde değil.");
             ResetDrag();
             return;
         }
@@ -150,11 +145,9 @@ public class DirtCleaner : MonoBehaviour
             if (useBrushMode)
             {
                 activeDirt = PickDirtUnderPointer(startPos);
-                Debug.Log("[DirtCleaner] MouseDown, activeDirt = " + (activeDirt ? activeDirt.name : "null"));
                 if (activeDirt != null)
                 {
                     activeBrushDirt = activeDirt.GetComponent<BrushErasableDirt>();
-                    Debug.Log("[DirtCleaner] activeBrushDirt = " + (activeBrushDirt ? "var" : "yok"));
                     dragging = (activeBrushDirt != null);
                 }
             }
@@ -171,7 +164,6 @@ public class DirtCleaner : MonoBehaviour
 
             if (Vector2.Distance(currentPos, lastBrushPos) > brushMoveThreshold)
             {
-                Debug.Log("[DirtCleaner] Mouse drag, ApplyBrushStroke çağrılıyor.");
                 ApplyBrushStroke(currentPos);
                 lastBrushPos = currentPos;
             }
@@ -255,19 +247,40 @@ public class DirtCleaner : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, 1000f))
         {
-            if (hit.transform == activeDirt)
+            // Hit objesinin activeDirt ile ilişkili olup olmadığını kontrol et
+            bool isValidHit = false;
+            
+            // 1) Hit objesi activeDirt'in kendisi veya child'ı mı?
+            Transform check = hit.transform;
+            while (check != null)
             {
-                Debug.Log("[DirtCleaner] Raycast kir: " + hit.transform.name + " point=" + hit.point);
+                if (check == activeDirt)
+                {
+                    isValidHit = true;
+                    break;
+                }
+                check = check.parent;
+            }
+            
+            // 2) Hit objesinde BrushErasableDirt var mı ve activeBrushDirt ile aynı mı?
+            if (!isValidHit)
+            {
+                var hitBrushDirt = hit.transform.GetComponent<BrushErasableDirt>();
+                if (hitBrushDirt == null)
+                    hitBrushDirt = hit.transform.GetComponentInParent<BrushErasableDirt>();
+                
+                if (hitBrushDirt == activeBrushDirt)
+                    isValidHit = true;
+            }
+
+            if (isValidHit)
+            {
                 activeBrushDirt.EraseBrushStroke(hit.point);
                 if (foamPrefab != null)
                 {
                     var ps = Instantiate(foamPrefab, hit.point, Quaternion.identity);
                     Destroy(ps.gameObject, foamLifetime);
                 }
-            }
-            else
-            {
-                Debug.Log("[DirtCleaner] Raycast başka bir objeye çarptı: " + hit.transform.name);
             }
         }
     }
@@ -326,31 +339,74 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- RAYCAST --------------------
     Transform PickDirtUnderPointer(Vector2 screenPos)
     {
-        Vector3 wp = cam.ScreenToWorldPoint(
-            new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
-
-        Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
-        if (hits2D != null && hits2D.Length > 0)
-        {
-            for (int i = hits2D.Length - 1; i >= 0; i--)
-            {
-                Transform tr = hits2D[i].transform;
-                if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
-                    return tr;
-            }
-        }
-
+        // Önce 3D raycast dene (daha güvenilir)
         Ray ray = cam.ScreenPointToRay(screenPos);
+        
         RaycastHit[] hits3D = Physics.RaycastAll(ray, 1000f);
+        
         if (hits3D != null && hits3D.Length > 0)
         {
             System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var hit in hits3D)
             {
-                Transform tr = hit.transform;
-                if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
-                    return tr;
+                // Direkt olarak hit objesinin kendisi veya parent'ı dirtItems'ta mı kontrol et
+                Transform found = FindDirtInHierarchy(hit.transform);
+                if (found != null)
+                    return found;
+                
+                // Ayrıca hit objesinde BrushErasableDirt var mı kontrol et
+                var brushDirt = hit.transform.GetComponent<BrushErasableDirt>();
+                if (brushDirt == null)
+                    brushDirt = hit.transform.GetComponentInParent<BrushErasableDirt>();
+                
+                if (brushDirt != null && !cleaned.Contains(brushDirt.transform))
+                {
+                    if (!dirtItems.Contains(brushDirt.transform))
+                        dirtItems.Add(brushDirt.transform);
+                    return brushDirt.transform;
+                }
             }
+        }
+
+        // 2D raycast
+        Vector3 wp = cam.ScreenToWorldPoint(
+            new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
+
+        Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
+        
+        if (hits2D != null && hits2D.Length > 0)
+        {
+            for (int i = hits2D.Length - 1; i >= 0; i--)
+            {
+                Transform found = FindDirtInHierarchy(hits2D[i].transform);
+                if (found != null)
+                    return found;
+                
+                var brushDirt = hits2D[i].GetComponent<BrushErasableDirt>();
+                if (brushDirt == null)
+                    brushDirt = hits2D[i].GetComponentInParent<BrushErasableDirt>();
+                
+                if (brushDirt != null && !cleaned.Contains(brushDirt.transform))
+                {
+                    if (!dirtItems.Contains(brushDirt.transform))
+                        dirtItems.Add(brushDirt.transform);
+                    return brushDirt.transform;
+                }
+            }
+        }
+
+        return null;
+    }
+    
+    // Hit objesinin kendisi veya parent zincirinde dirtItems'ta olan bir transform ara
+    Transform FindDirtInHierarchy(Transform tr)
+    {
+        Transform current = tr;
+        while (current != null)
+        {
+            if (dirtItems.Contains(current) && !cleaned.Contains(current))
+                return current;
+            current = current.parent;
         }
         return null;
     }
@@ -425,6 +481,7 @@ public class DirtCleaner : MonoBehaviour
                 newPlanned++;
         }
         totalDirtPlanned = cleanedCount + newPlanned;
+
         UpdateProgressUI();
     }
 }

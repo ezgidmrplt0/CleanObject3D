@@ -55,30 +55,26 @@ public class CleanModeCamera : MonoBehaviour
         if (!cam) cam = GetComponent<Camera>();
         if (!cam) cam = Camera.main;
 
-        // Ortho varsayıyoruz (perspektif de kullanılabilir, zoom farklı ele alınır)
         if (cam != null && !cam.orthographic)
             cam.orthographic = true;
 
         if (dirtCleaner == null) dirtCleaner = FindObjectOfType<DirtCleaner>();
         if (dirtCleaner != null)
         {
-            // DirtCleaner'ın kameraController alanına bu scripti bağlamak faydalı
             if (dirtCleaner.cameraController == null)
                 dirtCleaner.cameraController = this;
 
             cachedUseBrush = dirtCleaner.useBrushMode;
             cachedOnlyWhenLocked = dirtCleaner.onlyWhenCameraLocked;
-            dirtCleaner.onlyWhenCameraLocked = true; // temizlik sadece kilitliyken
-
-            Debug.Log("[CleanModeCamera] Awake: DirtCleaner bağlandı, onlyWhenCameraLocked=true");
+            dirtCleaner.onlyWhenCameraLocked = true;
         }
 
+        // ZORUNLU BAŞLANGIÇ: her zaman kamera modu açık başlasın
+        controlsEnabled = true;
+        toggleOn = false;
+
         if (cam) targetOrtho = cam.orthographicSize;
-
-        // Başlangıçta icon'u mevcut moda göre ayarla
         UpdateToggleIcon();
-
-        Debug.Log($"[CleanModeCamera] Awake: controlsEnabled={controlsEnabled}");
     }
 
     void Update()
@@ -200,7 +196,6 @@ public class CleanModeCamera : MonoBehaviour
     // Hold yaklaşımı: UI Button OnPointerDown -> OnCleanButtonDown, OnPointerUp -> OnCleanButtonUp
     public void OnCleanButtonDown()
     {
-        Debug.Log("[CleanModeCamera] OnCleanButtonDown");
         wasControlsBefore = controlsEnabled;
         controlsEnabled = false; // Kamera kilitli
         if (dirtCleaner)
@@ -218,7 +213,6 @@ public class CleanModeCamera : MonoBehaviour
 
     public void OnCleanButtonUp()
     {
-        Debug.Log("[CleanModeCamera] OnCleanButtonUp");
         controlsEnabled = wasControlsBefore;
         if (dirtCleaner)
         {
@@ -234,7 +228,6 @@ public class CleanModeCamera : MonoBehaviour
     // Toggle yaklaşımı: UI Button OnClick -> OnCleanToggle
     public void OnCleanToggle()
     {
-        Debug.Log("[CleanModeCamera] OnCleanToggle çağrıldı, önceki toggleOn=" + toggleOn);
         if (!toggleOn)
         {
             wasControlsBefore = controlsEnabled;
@@ -259,7 +252,6 @@ public class CleanModeCamera : MonoBehaviour
             toggleOn = false;
         }
 
-        Debug.Log($"[CleanModeCamera] OnCleanToggle SON: toggleOn={toggleOn}, controlsEnabled={controlsEnabled}");
         UpdateToggleIcon();
     }
 
