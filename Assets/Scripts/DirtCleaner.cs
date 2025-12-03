@@ -78,6 +78,7 @@ public class DirtCleaner : MonoBehaviour
 
     void Update()
     {
+        // Kamera uygun değilse veya fırça elde değilse temizleme yok
         if (!CanCleanNow() || !brushEquipped)
         {
             ResetDrag();
@@ -247,33 +248,7 @@ public class DirtCleaner : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, 1000f))
         {
-            // Hit objesinin activeDirt ile ilişkili olup olmadığını kontrol et
-            bool isValidHit = false;
-            
-            // 1) Hit objesi activeDirt'in kendisi veya child'ı mı?
-            Transform check = hit.transform;
-            while (check != null)
-            {
-                if (check == activeDirt)
-                {
-                    isValidHit = true;
-                    break;
-                }
-                check = check.parent;
-            }
-            
-            // 2) Hit objesinde BrushErasableDirt var mı ve activeBrushDirt ile aynı mı?
-            if (!isValidHit)
-            {
-                var hitBrushDirt = hit.transform.GetComponent<BrushErasableDirt>();
-                if (hitBrushDirt == null)
-                    hitBrushDirt = hit.transform.GetComponentInParent<BrushErasableDirt>();
-                
-                if (hitBrushDirt == activeBrushDirt)
-                    isValidHit = true;
-            }
-
-            if (isValidHit)
+            if (hit.transform == activeDirt)
             {
                 activeBrushDirt.EraseBrushStroke(hit.point);
                 if (foamPrefab != null)
@@ -339,50 +314,31 @@ public class DirtCleaner : MonoBehaviour
     // -------------------- RAYCAST --------------------
     Transform PickDirtUnderPointer(Vector2 screenPos)
     {
-        // 3D raycast
+        Vector3 wp = cam.ScreenToWorldPoint(
+            new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
+
+        Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
+        if (hits2D != null && hits2D.Length > 0)
+        {
+            for (int i = hits2D.Length - 1; i >= 0; i--)
+            {
+                Transform tr = hits2D[i].transform;
+                if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
+                    return tr;
+            }
+        }
+
         Ray ray = cam.ScreenPointToRay(screenPos);
         RaycastHit[] hits3D = Physics.RaycastAll(ray, 1000f);
-        
         if (hits3D != null && hits3D.Length > 0)
         {
             System.Array.Sort(hits3D, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var hit in hits3D)
             {
-                // dirtItems listesinde var mı kontrol et (parent zinciri dahil)
-                Transform found = FindDirtInHierarchy(hit.transform);
-                if (found != null)
-                    return found;
+                Transform tr = hit.transform;
+                if (dirtItems.Contains(tr) && !cleaned.Contains(tr))
+                    return tr;
             }
-        }
-
-        // 2D raycast
-        Vector3 wp = cam.ScreenToWorldPoint(
-            new Vector3(screenPos.x, screenPos.y, Mathf.Abs(cam.transform.position.z)));
-
-        Collider2D[] hits2D = Physics2D.OverlapPointAll(wp);
-        
-        if (hits2D != null && hits2D.Length > 0)
-        {
-            for (int i = hits2D.Length - 1; i >= 0; i--)
-            {
-                Transform found = FindDirtInHierarchy(hits2D[i].transform);
-                if (found != null)
-                    return found;
-            }
-        }
-
-        return null;
-    }
-    
-    // Hit objesinin kendisi veya parent zincirinde dirtItems'ta olan bir transform ara
-    Transform FindDirtInHierarchy(Transform tr)
-    {
-        Transform current = tr;
-        while (current != null)
-        {
-            if (dirtItems.Contains(current) && !cleaned.Contains(current))
-                return current;
-            current = current.parent;
         }
         return null;
     }
@@ -457,7 +413,6 @@ public class DirtCleaner : MonoBehaviour
                 newPlanned++;
         }
         totalDirtPlanned = cleanedCount + newPlanned;
-
         UpdateProgressUI();
     }
 }

@@ -55,25 +55,25 @@ public class CleanModeCamera : MonoBehaviour
         if (!cam) cam = GetComponent<Camera>();
         if (!cam) cam = Camera.main;
 
+        // Ortho varsayıyoruz (perspektif de kullanılabilir, zoom farklı ele alınır)
         if (cam != null && !cam.orthographic)
             cam.orthographic = true;
 
         if (dirtCleaner == null) dirtCleaner = FindObjectOfType<DirtCleaner>();
         if (dirtCleaner != null)
         {
+            // DirtCleaner'ın kameraController alanına bu scripti bağlamak faydalı
             if (dirtCleaner.cameraController == null)
                 dirtCleaner.cameraController = this;
 
             cachedUseBrush = dirtCleaner.useBrushMode;
             cachedOnlyWhenLocked = dirtCleaner.onlyWhenCameraLocked;
-            dirtCleaner.onlyWhenCameraLocked = true;
+            dirtCleaner.onlyWhenCameraLocked = true; // temizlik sadece kilitliyken
         }
 
-        // ZORUNLU BAŞLANGIÇ: her zaman kamera modu açık başlasın
-        controlsEnabled = true;
-        toggleOn = false;
-
         if (cam) targetOrtho = cam.orthographicSize;
+
+        // Başlangıçta icon'u mevcut moda göre ayarla
         UpdateToggleIcon();
     }
 

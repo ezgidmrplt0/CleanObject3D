@@ -5,10 +5,11 @@ public class BrushUIController : MonoBehaviour
 {
     [Header("Referanslar")]
     public DirtCleaner dirtCleaner;     // Sahnedeki DirtCleaner
-    public Image brushFollowImage;      // �mleci takip eden f�r�a image
-    public Button brushButton;          // Sa� alttaki f�r�a butonu
+    public CleanModeCamera cleanModeCamera; // Kamera kontrolü
+    public Image brushFollowImage;      // İmleci takip eden fırça image
+    public Button brushButton;          // Sağ alttaki fırça butonu
 
-    [Header("F�r�a Spriteleri (0 = default, 1 = market f�r�as� vs.)")]
+    [Header("Fırça Spriteleri (0 = default, 1 = market fırçası vs.)")]
     public Sprite[] brushSprites;
 
     bool equipped = false;
@@ -16,31 +17,33 @@ public class BrushUIController : MonoBehaviour
 
     void Start()
     {
-        // Butona t�klay�nca f�r�ay� a�/kapa
-        brushButton.onClick.AddListener(ToggleBrush);
+        // Butona tıklayınca fırçayı aç/kapa
+        if (brushButton != null)
+            brushButton.onClick.AddListener(ToggleBrush);
 
-        // Ba�ta takip eden f�r�a g�r�nmesin
-        brushFollowImage.gameObject.SetActive(false);
-        brushFollowImage.raycastTarget = false;
+        // Başta takip eden fırça görünmesin
+        if (brushFollowImage != null)
+        {
+            brushFollowImage.gameObject.SetActive(false);
+            brushFollowImage.raycastTarget = false;
+        }
 
-        // PLAYERPREFS'TEN B�LG�Y� �EK
-        currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);          // default 0
-        // equipped'i her zaman kapalı başlat
+        // Fırça sprite ID'sini al
+        currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);
+        
+        // HER ZAMAN KAPALI BAŞLA
         equipped = false;
-        PlayerPrefs.SetInt("BrushEquipped", 0);
-        PlayerPrefs.Save();
+
+        // CleanModeCamera'yı otomatik bul
+        if (cleanModeCamera == null)
+            cleanModeCamera = FindObjectOfType<CleanModeCamera>();
 
         // Seçili fırçaya göre sprite'ları ayarla
         ApplyCurrentBrushVisuals();
 
-        // E�er kay�tl� durumda eldeyse, sahne a��ld���nda da elde olsun
-        if (equipped)
-        {
-            brushFollowImage.gameObject.SetActive(true);
-
-            if (dirtCleaner != null)
-                dirtCleaner.SetBrushEquipped(true);
-        }
+        // DirtCleaner'a fırça kapalı bilgisini ver
+        if (dirtCleaner != null)
+            dirtCleaner.SetBrushEquipped(false);
     }
 
     void Update()
@@ -58,48 +61,53 @@ public class BrushUIController : MonoBehaviour
         brushFollowImage.rectTransform.position = pos;
     }
 
-    // �u anki brushId'ye g�re buton ve takip eden sprite'� ayarla
+    // Şu anki brushId'ye göre buton ve takip eden sprite'ı ayarla
     void ApplyCurrentBrushVisuals()
     {
         if (brushSprites == null || brushSprites.Length == 0)
             return;
 
         if (currentBrushId < 0 || currentBrushId >= brushSprites.Length)
-            currentBrushId = 0; // g�venlik i�in default
+            currentBrushId = 0;
 
         Sprite s = brushSprites[currentBrushId];
 
         // Butondaki image
-        Image btnImg = brushButton.GetComponent<Image>();
-        if (btnImg != null)
-            btnImg.sprite = s;
+        if (brushButton != null)
+        {
+            Image btnImg = brushButton.GetComponent<Image>();
+            if (btnImg != null)
+                btnImg.sprite = s;
+        }
 
         // Takip eden image
         if (brushFollowImage != null)
             brushFollowImage.sprite = s;
     }
 
-    // �leride istersen koddan da f�r�a de�i�tirebilirsin
+    void ToggleBrush()
+    {
+        equipped = !equipped;
+
+        // Temizleme sistemini tetikle
+        if (dirtCleaner != null)
+            dirtCleaner.SetBrushEquipped(equipped);
+
+        // Kamerayı kilitle/aç - fırça eldeyken kamera kilitli olmalı
+        if (cleanModeCamera != null)
+            cleanModeCamera.controlsEnabled = !equipped;
+
+        // Takip eden fırça açık/kapalı
+        if (brushFollowImage != null)
+            brushFollowImage.gameObject.SetActive(equipped);
+    }
+
+    // İleride koddan fırça değiştirmek için
     public void ChangeBrush(int newBrushId)
     {
         currentBrushId = newBrushId;
         PlayerPrefs.SetInt("CurrentBrushId", newBrushId);
         PlayerPrefs.Save();
-
         ApplyCurrentBrushVisuals();
-    }
-
-    void ToggleBrush()
-    {
-        equipped = !equipped;
-
-        if (dirtCleaner != null)
-            dirtCleaner.SetBrushEquipped(equipped);
-
-        if (brushFollowImage != null)
-            brushFollowImage.gameObject.SetActive(equipped);
-
-        PlayerPrefs.SetInt("BrushEquipped", equipped ? 1 : 0);
-        PlayerPrefs.Save();
     }
 }
