@@ -21,5 +21,9 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);  // Tüm sahnelerde kalsýn
+
+        // --- EK: PlayerPrefs'ten mevcut fýrça bilgilerini çek ---
+        currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);
+        brushEquipped = PlayerPrefs.GetInt("BrushEquipped", 0) == 1;
     }
 }

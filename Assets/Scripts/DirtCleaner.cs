@@ -40,6 +40,12 @@ public class DirtCleaner : MonoBehaviour
     [Header("Olaylar")]
     public UnityEvent onAllCleaned;
 
+    [Header("Level Geçişi")]
+    [Tooltip("Tüm kirler temizlenince kullanılacak LevelManager")]
+    public LevelManager levelManager;
+    [Tooltip("Tüm kirler temizlenince otomatik bir sonraki levele geçilsin mi?")]
+    public bool autoLoadNextLevelOnAllCleaned = true;
+
     [Header("Brush Efektleri")]
     public ParticleSystem foamPrefab;
     public float foamLifetime = 1f;
@@ -371,7 +377,15 @@ public class DirtCleaner : MonoBehaviour
         if (!allCleanedFired && totalDirtPlanned > 0 && cleanedCount >= totalDirtPlanned)
         {
             allCleanedFired = true;
+
+            // Önce UnityEvent çalışsın (Inspector’dan bağlayacağın başka şeyler varsa)
             onAllCleaned?.Invoke();
+
+            // Sonra otomatik level geçişi
+            if (autoLoadNextLevelOnAllCleaned && levelManager != null)
+            {
+                levelManager.LoadNextLevel();
+            }
         }
     }
 
