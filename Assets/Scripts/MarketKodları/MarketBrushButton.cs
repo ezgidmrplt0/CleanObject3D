@@ -1,113 +1,173 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Market panelindeki Ã¼rÃ¼n satÄ±rlarÄ±nÄ± yÃ¶netir.
+/// Her Ã¼rÃ¼n iÃ§in bir tane bu script eklenir.
+/// </summary>
 public class MarketBrushButton : MonoBehaviour
 {
-    [Header("Bu butonun temsil ettiði fýrça")]
-    [Tooltip("Bu butonun temsil ettiði fýrça id'si. 0 = default, 1 = market fýrçasý, 2...")]
+    [Header("ÃœrÃ¼n Bilgileri")]
+    [Tooltip("Bu butonun temsil ettiÄŸi fÄ±rÃ§a id'si. 0 = default, 1, 2...")]
     public int brushId = 1;
 
-    [Header("Fiyat Ayarlarý")]
-    [Tooltip("Bu fýrçanýn fiyatý (Coins cinsinden)")]
+    [Tooltip("Bu Ã¼rÃ¼nÃ¼n fiyatÄ± (Coins cinsinden)")]
     public int price = 50;
 
-    [Tooltip("Fiyatý gösterdiðin TextMeshPro (opsiyonel, inspector'dan baðla)")]
+    [Header("UI ReferanslarÄ±")]
+    [Tooltip("SaÄŸdaki ana buton (BUY/EQUIP/EQUIPPED)")]
+    public Button actionButton;
+
+    [Tooltip("Buton Ã¼zerindeki text")]
+    public TextMeshProUGUI buttonText;
+
+    [Tooltip("Fiyat text'i (Ã¼rÃ¼n bilgisi kÄ±smÄ±nda)")]
     public TextMeshProUGUI priceText;
 
-    [Tooltip("Market sahnesinde toplam coin'i gösteren Text (opsiyonel)")]
-    public TextMeshProUGUI coinsText;
+    [Header("Buton Renkleri")]
+    public Color buyColor = new Color(0.8f, 0.2f, 0.5f);      // Pembe - BUY
+    public Color equipColor = new Color(0.2f, 0.7f, 0.3f);    // YeÅŸil - EQUIP
+    public Color equippedColor = new Color(0.5f, 0.5f, 0.5f); // Gri - EQUIPPED
 
-    [Header("Satýn aldýktan sonra gidilecek sahne")]
-    [Tooltip("Fýrçayý aldýktan sonra oyunun en baþtan baþlayacaðý sahne adý")]
-    public string gameStartSceneName = "GameStartScene"; // BURAYA oyunun ilk sahnesinin adýný yaz
+    [Header("Panel Controller")]
+    public MarketPanelController marketController;
 
-    string unlockKey; // BrushUnlocked_# key'i
+    string unlockKey;
+    Image buttonImage;
 
     void Start()
     {
         unlockKey = "BrushUnlocked_" + brushId;
 
-        // Fiyat text'ine otomatik yaz
-        if (priceText != null)
+        if (actionButton != null)
         {
-            priceText.text = price.ToString();
+            buttonImage = actionButton.GetComponent<Image>();
+            actionButton.onClick.AddListener(OnButtonClicked);
         }
 
-        // Baþlangýçta coin UI güncelle
-        UpdateCoinsUI();
+        if (marketController == null)
+            marketController = FindObjectOfType<MarketPanelController>();
 
-        // Eðer bu fýrça önceden satýn alýnmýþsa UI'da istersen gösterim deðiþikliði yap
-        if (IsBrushUnlocked())
+        // Fiyat text'ini ayarla
+        if (priceText != null)
+            priceText.text = "+" + price + " Gold";
+
+        UpdateVisuals();
+    }
+
+    void OnEnable()
+    {
+        // Biraz gecikme ile gÃ¼ncelle - UI hazÄ±r olsun
+        Invoke("UpdateVisuals", 0.05f);
+    }
+
+    /// <summary>
+    /// Buton gÃ¶rsellerini duruma gÃ¶re gÃ¼nceller
+    /// </summary>
+    public void UpdateVisuals()
+    {
+        if (actionButton == null) return;
+        if (buttonImage == null) buttonImage = actionButton.GetComponent<Image>();
+
+        bool isUnlocked = IsBrushUnlocked();
+        int currentEquippedId = PlayerPrefs.GetInt("CurrentBrushId", 0);
+        bool isEquipped = (currentEquippedId == brushId);
+
+        if (!isUnlocked)
         {
-            // Örnek: fiyat text'ini "Satýn Alýndý" yapabilirsin
-            if (priceText != null)
-            {
-                priceText.text = "Satýn Alýndý";
-            }
+            // SatÄ±n alÄ±nmamÄ±ÅŸ - BUY gÃ¶ster
+            if (buttonText != null) buttonText.text = "BUY";
+            if (buttonImage != null) buttonImage.color = buyColor;
+            actionButton.interactable = true;
+        }
+        else if (isEquipped)
+        {
+            // SatÄ±n alÄ±nmÄ±ÅŸ VE ÅŸu an takÄ±lÄ± - EQUIPPED gÃ¶ster
+            if (buttonText != null) buttonText.text = "EQUIPPED";
+            if (buttonImage != null) buttonImage.color = equippedColor;
+            actionButton.interactable = false;
+        }
+        else
+        {
+            // SatÄ±n alÄ±nmÄ±ÅŸ AMA takÄ±lÄ± deÄŸil - EQUIP gÃ¶ster
+            if (buttonText != null) buttonText.text = "EQUIP";
+            if (buttonImage != null) buttonImage.color = equipColor;
+            actionButton.interactable = true;
         }
     }
 
-    // Butonun OnClick'ine baðlanacak fonksiyon
-    public void OnBrushClicked()
+    /// <summary>
+    /// Butona tÄ±klandÄ±ÄŸÄ±nda
+    /// </summary>
+    public void OnButtonClicked()
     {
-        // Eðer zaten satýn alýndýysa sadece seç ve oyunu baþlat
         if (IsBrushUnlocked())
         {
-            EquipBrushAndStartGame();
-            return;
+            // Zaten satÄ±n alÄ±nmÄ±ÅŸ - sadece equip et
+            EquipBrush();
         }
+        else
+        {
+            // SatÄ±n alma iÅŸlemi
+            TryPurchase();
+        }
+    }
 
+    void TryPurchase()
+    {
         int currentCoins = PlayerPrefs.GetInt("Coins", 0);
 
         if (currentCoins < price)
         {
-            Debug.Log("Yetersiz para! Gerekli: " + price + " - Senin: " + currentCoins);
-            // Burada istersen ekrana "Yetersiz para" uyarý yazýsý gösterebilirsin.
+            Debug.Log("Yetersiz para! Gerekli: " + price + " - Mevcut: " + currentCoins);
+            // TODO: Yetersiz para uyarÄ±sÄ± gÃ¶ster
             return;
         }
 
-        // Yeterli para var -> coins düþ
+        // Para dÃ¼ÅŸ
         currentCoins -= price;
         PlayerPrefs.SetInt("Coins", currentCoins);
 
-        // Bu fýrçayý unlock et
+        // ÃœrÃ¼nÃ¼ unlock et
         PlayerPrefs.SetInt(unlockKey, 1);
-
-        // Seçili fýrça yap
-        PlayerPrefs.SetInt("CurrentBrushId", brushId);
-        PlayerPrefs.SetInt("BrushEquipped", 1);
-
         PlayerPrefs.Save();
 
-        // UI güncelle
-        UpdateCoinsUI();
-        if (priceText != null)
+        // Equip et
+        EquipBrush();
+
+        Debug.Log("FÄ±rÃ§a satÄ±n alÄ±ndÄ±! ID: " + brushId);
+    }
+
+    void EquipBrush()
+    {
+        PlayerPrefs.SetInt("CurrentBrushId", brushId);
+        PlayerPrefs.Save();
+
+        // MarketPanelController'a bildir
+        if (marketController != null)
         {
-            priceText.text = "Satýn Alýndý";
+            marketController.OnBrushPurchased(brushId);
+            marketController.UpdateCoinsUI();
         }
 
-        // Oyunu en baþtan baþlat
-        EquipBrushAndStartGame();
+        // TÃ¼m butonlarÄ±n gÃ¶rsellerini gÃ¼ncelle
+        RefreshAllButtons();
+    }
+
+    void RefreshAllButtons()
+    {
+        MarketBrushButton[] allButtons = FindObjectsOfType<MarketBrushButton>();
+        foreach (var btn in allButtons)
+        {
+            btn.UpdateVisuals();
+        }
     }
 
     bool IsBrushUnlocked()
     {
+        // brushId 0 (default fÄ±rÃ§a) her zaman aÃ§Ä±k
+        if (brushId == 0) return true;
         return PlayerPrefs.GetInt(unlockKey, 0) == 1;
-    }
-
-    void EquipBrushAndStartGame()
-    {
-        // Burada istersen sadece sahneyi açmadan da kalabilirsin
-        // ama þu an senin mantýðýna göre oyunu baþtan baþlatýyoruz
-        SceneManager.LoadScene(gameStartSceneName);
-    }
-
-    void UpdateCoinsUI()
-    {
-        if (coinsText == null) return;
-
-        int currentCoins = PlayerPrefs.GetInt("Coins", 0);
-        coinsText.text = currentCoins.ToString();
     }
 }
