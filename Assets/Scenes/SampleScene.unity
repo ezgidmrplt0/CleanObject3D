@@ -3372,6 +3372,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 431181407}
     m_Modifications:
+    - target: {fileID: 83810168636969906, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 551e9ddab53c28c48b2e85f004b17aeb, type: 3}
+    - target: {fileID: 925991354970881431, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 0e81b84a869f5a749a916c41eedb2d73, type: 3}
     - target: {fileID: 1650398601591637094, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
       propertyPath: m_Name
       value: Store
@@ -3472,6 +3480,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3473760636910691310, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: ca63005126dc57249bbcca4667e9fdb4, type: 3}
     - target: {fileID: 3768990748088019269, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -3536,10 +3548,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5759395996760671565, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 6934c55763e71b54cbe85e678fc5b079, type: 3}
     - target: {fileID: 7300537802711730038, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7300901405817014737, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 836f3431fa2e8294ebaedb017bd28ea7, type: 3}
     - target: {fileID: 8718436531651233202, guid: 40ecd892e8cf6fd0d9ce5697fd0063a0, type: 3}
       propertyPath: m_IsActive
       value: 1
