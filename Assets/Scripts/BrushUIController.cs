@@ -9,17 +9,27 @@ public class BrushUIController : MonoBehaviour
     public Image brushFollowImage;      // İmleci takip eden fırça image
     public Button brushButton;          // Sağ alttaki fırça butonu
 
-    [Header("Fırça Spriteleri (0 = default, 1 = market fırçası vs.)")]
+    [Header("Buton Spriteleri")]
+    [Tooltip("Kamera modunda (fırça kapalı) gösterilecek sprite")]
+    public Sprite cameraModeSprite;
+    [Tooltip("Temizlik modunda (fırça açık) gösterilecek sprite")]
+    public Sprite cleanModeSprite;
+
+    [Header("Fırça Spriteleri (takip eden fırça için)")]
     public Sprite[] brushSprites;
 
     bool equipped = false;
     int currentBrushId = 0;
+    Image buttonImage;
 
     void Start()
     {
         // Butona tıklayınca fırçayı aç/kapa
         if (brushButton != null)
+        {
             brushButton.onClick.AddListener(ToggleBrush);
+            buttonImage = brushButton.GetComponent<Image>();
+        }
 
         // Başta takip eden fırça görünmesin
         if (brushFollowImage != null)
@@ -38,8 +48,11 @@ public class BrushUIController : MonoBehaviour
         if (cleanModeCamera == null)
             cleanModeCamera = FindObjectOfType<CleanModeCamera>();
 
-        // Seçili fırçaya göre sprite'ları ayarla
-        ApplyCurrentBrushVisuals();
+        // Takip eden fırça sprite'ını ayarla
+        ApplyBrushFollowVisual();
+        
+        // Buton sprite'ını ayarla - başlangıçta kamera modu
+        UpdateButtonSprite();
 
         // DirtCleaner'a fırça kapalı bilgisini ver
         if (dirtCleaner != null)
@@ -61,28 +74,35 @@ public class BrushUIController : MonoBehaviour
         brushFollowImage.rectTransform.position = pos;
     }
 
-    // Şu anki brushId'ye göre buton ve takip eden sprite'ı ayarla
-    void ApplyCurrentBrushVisuals()
+    // Şu anki brushId'ye göre takip eden fırça sprite'ını ayarla
+    void ApplyBrushFollowVisual()
     {
-        if (brushSprites == null || brushSprites.Length == 0)
-            return;
+        if (brushFollowImage == null) return;
+        if (brushSprites == null || brushSprites.Length == 0) return;
 
         if (currentBrushId < 0 || currentBrushId >= brushSprites.Length)
             currentBrushId = 0;
 
-        Sprite s = brushSprites[currentBrushId];
+        brushFollowImage.sprite = brushSprites[currentBrushId];
+    }
 
-        // Butondaki image
-        if (brushButton != null)
+    // Buton sprite'ını moda göre güncelle
+    void UpdateButtonSprite()
+    {
+        if (buttonImage == null) return;
+
+        if (equipped)
         {
-            Image btnImg = brushButton.GetComponent<Image>();
-            if (btnImg != null)
-                btnImg.sprite = s;
+            // Temizlik modu - cleanModeSprite göster
+            if (cleanModeSprite != null)
+                buttonImage.sprite = cleanModeSprite;
         }
-
-        // Takip eden image
-        if (brushFollowImage != null)
-            brushFollowImage.sprite = s;
+        else
+        {
+            // Kamera modu - cameraModeSprite göster
+            if (cameraModeSprite != null)
+                buttonImage.sprite = cameraModeSprite;
+        }
     }
 
     void ToggleBrush()
@@ -100,6 +120,9 @@ public class BrushUIController : MonoBehaviour
         // Takip eden fırça açık/kapalı
         if (brushFollowImage != null)
             brushFollowImage.gameObject.SetActive(equipped);
+
+        // Buton sprite'ını güncelle
+        UpdateButtonSprite();
     }
 
     // İleride koddan fırça değiştirmek için
@@ -108,6 +131,6 @@ public class BrushUIController : MonoBehaviour
         currentBrushId = newBrushId;
         PlayerPrefs.SetInt("CurrentBrushId", newBrushId);
         PlayerPrefs.Save();
-        ApplyCurrentBrushVisuals();
+        ApplyBrushFollowVisual();
     }
 }
