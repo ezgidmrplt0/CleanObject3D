@@ -29,6 +29,7 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
 
     [Header("Bağlantılar")]
     public DirtCleaner dirtCleaner;
+    public LevelManager levelManager;
 
     [Header("Level Takibi")]
     public TextMeshProUGUI levelText; // Ekranda gösterilecek level yazısı
@@ -48,7 +49,8 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
     public float minBrushSize = 0.15f;
 
     [Header("Level Bittiğinde")]
-    public GameObject nextButton;   // Level bitince açılacak buton
+    [Tooltip("Level bitince kaç saniye beklenecek (yıldızları görmek için)")]
+    public float delayBeforeNextLevel = 2f;
 
     float elapsed = 0f;
     bool running = false;
@@ -66,14 +68,20 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
         UpdateCoinsUI();
         if (!dirtCleaner) dirtCleaner = FindObjectOfType<DirtCleaner>();
         if (dirtCleaner != null)
+        {
             dirtCleaner.onAllCleaned.AddListener(OnAllCleaned);
+            Debug.Log("[LevelTimer] DirtCleaner bulundu, onAllCleaned dinleniyor.");
+        }
+        else
+        {
+            Debug.LogError("[LevelTimer] DirtCleaner BULUNAMADI!");
+        }
 
         elapsed = 0f;
         running = true;
         UpdateUI();
 
         if (starsImage) starsImage.enabled = false;
-        if (nextButton) nextButton.SetActive(false); // BAŞTA GİZLE
     }
 
     void Update()
@@ -102,25 +110,81 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
 
     void OnAllCleaned()
     {
+        Debug.Log("[LevelTimer] OnAllCleaned çağrıldı! Level tamamlandı.");
+        
         if (finished) return;
-    finished = true;
-    running = false;
+        finished = true;
+        running = false;
 
-    int stars = CalculateStars();
-    ApplyStarSprite(stars);
-    AddCoinsForStars(stars);
+        int stars = CalculateStars();
+        Debug.Log("[LevelTimer] Yıldız sayısı: " + stars);
+        ApplyStarSprite(stars);
+        AddCoinsForStars(stars);
 
-    // Level'i artır
-    int currentLevel = PlayerPrefs.GetInt(playerPrefsLevelKey, 1);
-    currentLevel++;
-    PlayerPrefs.SetInt(playerPrefsLevelKey, currentLevel);
-    PlayerPrefs.Save();
+        // Level'i artır
+        int currentLevel = PlayerPrefs.GetInt(playerPrefsLevelKey, 1);
+        currentLevel++;
+        PlayerPrefs.SetInt(playerPrefsLevelKey, currentLevel);
+        PlayerPrefs.Save();
 
-    // Bir sonraki oyunda level metninin güncellenmesi için isteğe bağlı hemen güncelle
-    if (levelText)
-        levelText.text = "Level " + currentLevel;
+        Debug.Log("[LevelTimer] Yeni level: " + currentLevel + " - " + delayBeforeNextLevel + " saniye sonra geçiş yapılacak...");
 
-    if (nextButton) nextButton.SetActive(true); // LEVEL BİTİNCE GÖSTER
+        // Bekle, sonra otomatik olarak sahneyi yeniden yükle (yeni level için)
+        StartCoroutine(LoadNextLevelAfterDelay(delayBeforeNextLevel));
+    }
+
+    System.Collections.IEnumerator LoadNextLevelAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Yıldız görüntüsünü gizle
+        if (starsImage) starsImage.enabled = false;
+        
+        // LevelManager ile bir sonraki prefab'a geç
+        if (levelManager == null)
+            levelManager = FindObjectOfType<LevelManager>();
+        
+        if (levelManager != null)
+        {
+            levelManager.LoadNextLevel();
+            Debug.Log("[LevelTimer] LevelManager.LoadNextLevel() çağrıldı.");
+            
+            // Biraz bekle (level geçiş animasyonu için), sonra DirtCleaner'ı sıfırla
+            yield return new WaitForSeconds(levelManager.transitionDuration + 0.2f);
+            
+            ResetForNewLevel();
+        }
+        else
+        {
+            Debug.LogError("[LevelTimer] LevelManager bulunamadı!");
+        }
+    }
+    
+    void ResetForNewLevel()
+    {
+        // Timer'ı sıfırla
+        elapsed = 0f;
+        running = true;
+        finished = false;
+        
+        // DirtCleaner'ı yeni level için sıfırla
+        if (dirtCleaner == null)
+            dirtCleaner = FindObjectOfType<DirtCleaner>();
+        
+        if (dirtCleaner != null)
+        {
+            dirtCleaner.FindAllDirts(); // Yeni level'deki kirleri bul
+        }
+        
+        // Level text güncelle
+        int currentLevel = PlayerPrefs.GetInt(playerPrefsLevelKey, 1);
+        if (levelText)
+            levelText.text = "Level " + currentLevel;
+        
+        // Zorluk ayarla
+        ApplyDifficultyForLevel(currentLevel);
+        
+        Debug.Log("[LevelTimer] Yeni level için sıfırlandı.");
     }
 
     int CalculateStars()

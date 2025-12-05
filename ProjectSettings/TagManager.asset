@@ -11,6 +11,7 @@ TagManager:
   - MusteriSilinme
   - Oyuncu
   - Musteri
+  - Dirt
   layers:
   - Default
   - TransparentFX

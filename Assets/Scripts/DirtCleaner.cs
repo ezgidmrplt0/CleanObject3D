@@ -13,7 +13,14 @@ public class DirtCleaner : MonoBehaviour
     public bool onlyWhenCameraLocked = true;
     public MonoBehaviour cameraController;   // MobileCameraController vb.
 
-    [Header("Kir Listesi")]
+    [Header("Kir Ayarları")]
+    [Tooltip("Dirt objelerini otomatik bul (Tag ile)")]
+    public bool autoFindDirts = true;
+    
+    [Tooltip("Dirt objelerinin tag'i")]
+    public string dirtTag = "Dirt";
+    
+    [Tooltip("Manuel kir listesi (autoFindDirts kapalıysa kullanılır)")]
     public List<Transform> dirtItems = new List<Transform>();
 
     [Header("Temizleme Modu")]
@@ -40,12 +47,6 @@ public class DirtCleaner : MonoBehaviour
     [Header("Olaylar")]
     public UnityEvent onAllCleaned;
 
-    [Header("Level Geçişi")]
-    [Tooltip("Tüm kirler temizlenince kullanılacak LevelManager")]
-    public LevelManager levelManager;
-    [Tooltip("Tüm kirler temizlenince otomatik bir sonraki levele geçilsin mi?")]
-    public bool autoLoadNextLevelOnAllCleaned = true;
-
     [Header("Brush Efektleri")]
     public ParticleSystem foamPrefab;
     public float foamLifetime = 1f;
@@ -69,6 +70,48 @@ public class DirtCleaner : MonoBehaviour
     {
         if (!cam) cam = Camera.main;
 
+        // Otomatik dirt bulma
+        if (autoFindDirts)
+        {
+            FindAllDirts();
+        }
+
+        // Dirt sayısını hesapla
+        CalculateTotalDirts();
+
+        UpdateProgressUI();
+    }
+
+    /// <summary>
+    /// Tag ile tüm dirt objelerini bulur
+    /// </summary>
+    public void FindAllDirts()
+    {
+        dirtItems.Clear();
+        cleaned.Clear();
+        allCleanedFired = false;
+
+        GameObject[] dirtObjects = GameObject.FindGameObjectsWithTag(dirtTag);
+        
+        foreach (var obj in dirtObjects)
+        {
+            if (obj != null)
+            {
+                dirtItems.Add(obj.transform);
+            }
+        }
+
+        Debug.Log("[DirtCleaner] " + dirtItems.Count + " adet dirt bulundu.");
+        
+        CalculateTotalDirts();
+        UpdateProgressUI();
+    }
+
+    /// <summary>
+    /// Toplam dirt sayısını hesaplar
+    /// </summary>
+    void CalculateTotalDirts()
+    {
         totalDirtPlanned = 0;
         var seen = new HashSet<Transform>();
         foreach (var t in dirtItems)
@@ -268,10 +311,14 @@ public class DirtCleaner : MonoBehaviour
 
     public void OnDirtCleanedByBrush(Transform dirt)
     {
+        Debug.Log("[DirtCleaner] OnDirtCleanedByBrush çağrıldı: " + (dirt != null ? dirt.name : "null"));
+        Debug.Log("[DirtCleaner] cleanedCount: " + cleanedCount + " / totalDirtPlanned: " + totalDirtPlanned);
+        
         if (!cleaned.Contains(dirt))
         {
             cleaned.Add(dirt);
             cleanedCount++;
+            Debug.Log("[DirtCleaner] Yeni dirt eklendi. cleanedCount: " + cleanedCount + " / totalDirtPlanned: " + totalDirtPlanned);
             UpdateProgressUI();
         }
     }
@@ -377,15 +424,11 @@ public class DirtCleaner : MonoBehaviour
         if (!allCleanedFired && totalDirtPlanned > 0 && cleanedCount >= totalDirtPlanned)
         {
             allCleanedFired = true;
-
-            // Önce UnityEvent çalışsın (Inspector’dan bağlayacağın başka şeyler varsa)
+            
+            Debug.Log("[DirtCleaner] TÜM KİRLER TEMİZLENDİ! onAllCleaned tetikleniyor...");
+            
+            // UnityEvent çalışsın (LevelTimer bunu dinliyor)
             onAllCleaned?.Invoke();
-
-            // Sonra otomatik level geçişi
-            if (autoLoadNextLevelOnAllCleaned && levelManager != null)
-            {
-                levelManager.LoadNextLevel();
-            }
         }
     }
 

@@ -272,11 +272,18 @@ public class BrushErasableDirt : MonoBehaviour
 
     void OnFullyCleaned()
     {
+        Debug.Log("[BrushErasableDirt] " + gameObject.name + " temizlendi! DirtCleaner'a haber veriliyor...");
+        
         // DirtCleaner'a haber ver
         DirtCleaner cleaner = FindObjectOfType<DirtCleaner>();
         if (cleaner != null)
         {
             cleaner.OnDirtCleanedByBrush(transform);
+            Debug.Log("[BrushErasableDirt] DirtCleaner bilgilendirildi.");
+        }
+        else
+        {
+            Debug.LogError("[BrushErasableDirt] DirtCleaner bulunamadı!");
         }
 
         // Animasyon ile yok ol
