@@ -1,17 +1,20 @@
 using UnityEngine;
-using UnityEngine.UI;
 using DG.Tweening;
 
 public class FoamTransitionController : MonoBehaviour
 {
     public static FoamTransitionController Instance { get; private set; }
 
-    [Header("References")]
-    public Image foamImage;
+    [Header("Particle References")]
+    [Tooltip("Ekraný köpükle kapatan ana patlama sistemi")]
+    public ParticleSystem closeFoamSystem;
+
+    [Tooltip("Ýstersen açýlýþta farklý bir efekt kullanmak için ikinci sistem")]
+    public ParticleSystem openFoamSystem; // boþ býrakýlýrsa closeFoamSystem kullanýlýr
 
     [Header("Settings")]
-    public float defaultDuration = 0.7f;
-    public float maxScale = 2.5f;   // köpüðün ne kadar büyüyeceði
+    [Tooltip("Geçiþ süresi (FoamClose/FoamOpen için temel süre)")]
+    public float defaultDuration = 2.5f;   // 2–3 sn dedin ya, buna yakýn tut
 
     void Awake()
     {
@@ -22,73 +25,68 @@ public class FoamTransitionController : MonoBehaviour
         }
         Instance = this;
 
-        if (foamImage == null)
-            foamImage = GetComponentInChildren<Image>();
-
-        if (foamImage == null)
+        if (closeFoamSystem != null)
         {
-            Debug.LogError("[FoamTransitionController] foamImage atanmadý!");
-            return;
+            closeFoamSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-        // Baþlangýçta görünmez ve küçük
-        var c = foamImage.color;
-        c.a = 0f;
-        foamImage.color = c;
-
-        foamImage.rectTransform.localScale = Vector3.zero;
+        if (openFoamSystem != null)
+        {
+            openFoamSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
     /// <summary>
-    /// Ekraný köpükle kapatma (transition OUT gibi düþünebilirsin)
+    /// Ekraný köpükle kapatma (OUT transition)
     /// </summary>
     public Tween FoamClose(float duration = -1f)
     {
-        if (foamImage == null) return null;
         if (duration <= 0f) duration = defaultDuration;
+        if (closeFoamSystem == null) return null;
 
-        RectTransform rt = foamImage.rectTransform;
+        var main = closeFoamSystem.main;
+        main.loop = false;
+        main.duration = duration;
+        main.useUnscaledTime = true;
 
-        // Her seferinde baþlangýç durumuna çek
-        rt.localScale = Vector3.zero;
-        var c = foamImage.color;
-        c.a = 0f;
-        foamImage.color = c;
+        // Bubbles'ýn ölme süresini duration'a göre ayarla (isteðe baðlý)
+        main.startLifetime = new ParticleSystem.MinMaxCurve(
+            duration * 0.6f,
+            duration * 1.0f
+        );
 
+        closeFoamSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        closeFoamSystem.Play(true);
+
+        // DOTween sequence sadece süreyi beklemek için
         Sequence seq = DOTween.Sequence();
-
-        // 1) Alfa açýlýrken köpük büyüsün
-        seq.Append(foamImage.DOFade(1f, duration * 0.4f));
-        seq.Join(rt.DOScale(maxScale, duration)
-            .SetEase(Ease.OutQuad));
-
-        // TimeScale=0 olsa bile çalýþsýn
-        seq.SetUpdate(true);
+        seq.AppendInterval(duration);
+        seq.SetUpdate(true); // timescale'den baðýmsýz
 
         return seq;
     }
 
     /// <summary>
-    /// Ekrandaki köpüðü geri çekme (transition IN gibi)
+    /// Köpüklerin patlayýp yok olduðu, ekranýn açýldýðý kýsým (IN transition)
     /// </summary>
     public Tween FoamOpen(float duration = -1f)
     {
-        if (foamImage == null) return null;
         if (duration <= 0f) duration = defaultDuration;
 
-        RectTransform rt = foamImage.rectTransform;
+        ParticleSystem ps = openFoamSystem != null ? openFoamSystem : closeFoamSystem;
+        if (ps != null)
+        {
+            var main = ps.main;
+            main.loop = false;
+            main.duration = duration;
+            main.useUnscaledTime = true;
 
-        // Close bittiðinde zaten maxScale + alpha=1 olacak
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ps.Play(true);
+        }
+
         Sequence seq = DOTween.Sequence();
-
-        // Biraz daha büyütüp silinebilir, ya da direkt küçültebilirsin.
-        seq.Append(rt.DOScale(maxScale * 1.1f, duration * 0.3f));
-
-        // Sonra alfa kapat + scale küçült
-        seq.Append(foamImage.DOFade(0f, duration * 0.7f));
-        seq.Join(rt.DOScale(0f, duration * 0.7f)
-            .SetEase(Ease.InQuad));
-
+        seq.AppendInterval(duration);
         seq.SetUpdate(true);
 
         return seq;
