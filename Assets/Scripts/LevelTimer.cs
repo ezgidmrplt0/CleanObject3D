@@ -78,10 +78,19 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
         }
 
         elapsed = 0f;
-        running = true;
+        running = false; // GameStartController aktif edene kadar bekle
         UpdateUI();
 
         if (starsImage) starsImage.enabled = false;
+    }
+    
+    void OnEnable()
+    {
+        // Script aktif edildiğinde timer'ı başlat
+        elapsed = 0f;
+        running = true;
+        finished = false;
+        Debug.Log("[LevelTimer] Timer başlatıldı.");
     }
 
     void Update()
