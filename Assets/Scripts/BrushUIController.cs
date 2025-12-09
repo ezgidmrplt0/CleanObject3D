@@ -40,7 +40,7 @@ public class BrushUIController : MonoBehaviour
 
         // Fırça sprite ID'sini al
         currentBrushId = PlayerPrefs.GetInt("CurrentBrushId", 0);
-        
+
         // HER ZAMAN KAPALI BAŞLA
         equipped = false;
 
@@ -50,13 +50,18 @@ public class BrushUIController : MonoBehaviour
 
         // Takip eden fırça sprite'ını ayarla
         ApplyBrushFollowVisual();
-        
+
         // Buton sprite'ını ayarla - başlangıçta kamera modu
         UpdateButtonSprite();
 
         // DirtCleaner'a fırça kapalı bilgisini ver
         if (dirtCleaner != null)
+        {
             dirtCleaner.SetBrushEquipped(false);
+
+            // Seçili fırçaya göre temizlik hız çarpanını ayarla
+            dirtCleaner.brushCleanSpeed = GetBrushSpeedMultiplier();
+        }
     }
 
     void Update()
@@ -105,6 +110,12 @@ public class BrushUIController : MonoBehaviour
         }
     }
 
+    // Fırça ID'sine göre temizlik hız çarpanı (0 -> 1.0, 1 -> 1.25, 2 -> 1.5, ...)
+    float GetBrushSpeedMultiplier()
+    {
+        return 1f + currentBrushId * 0.25f;
+    }
+
     void ToggleBrush()
     {
         equipped = !equipped;
@@ -132,5 +143,9 @@ public class BrushUIController : MonoBehaviour
         PlayerPrefs.SetInt("CurrentBrushId", newBrushId);
         PlayerPrefs.Save();
         ApplyBrushFollowVisual();
+
+        // Seçili fırçaya göre DirtCleaner hız çarpanını güncelle
+        if (dirtCleaner != null)
+            dirtCleaner.brushCleanSpeed = GetBrushSpeedMultiplier();
     }
 }

@@ -16,10 +16,10 @@ public class DirtCleaner : MonoBehaviour
     [Header("Kir Ayarları")]
     [Tooltip("Dirt objelerini otomatik bul (Tag ile)")]
     public bool autoFindDirts = true;
-    
+
     [Tooltip("Dirt objelerinin tag'i")]
     public string dirtTag = "Dirt";
-    
+
     [Tooltip("Manuel kir listesi (autoFindDirts kapalıysa kullanılır)")]
     public List<Transform> dirtItems = new List<Transform>();
 
@@ -53,6 +53,9 @@ public class DirtCleaner : MonoBehaviour
 
     // >>> Fırça elde mi? (BrushUIController burayı değiştiriyor)
     [HideInInspector] public bool brushEquipped = false;
+
+    // >>> Seçili fırçaya göre temizlik hız çarpanı (1 = default fırça)
+    [HideInInspector] public float brushCleanSpeed = 1f;
 
     // Dahili durumlar
     Vector2 startPos;
@@ -92,7 +95,7 @@ public class DirtCleaner : MonoBehaviour
         allCleanedFired = false;
 
         GameObject[] dirtObjects = GameObject.FindGameObjectsWithTag(dirtTag);
-        
+
         foreach (var obj in dirtObjects)
         {
             if (obj != null)
@@ -102,7 +105,7 @@ public class DirtCleaner : MonoBehaviour
         }
 
         Debug.Log("[DirtCleaner] " + dirtItems.Count + " adet dirt bulundu.");
-        
+
         CalculateTotalDirts();
         UpdateProgressUI();
     }
@@ -313,7 +316,7 @@ public class DirtCleaner : MonoBehaviour
     {
         Debug.Log("[DirtCleaner] OnDirtCleanedByBrush çağrıldı: " + (dirt != null ? dirt.name : "null"));
         Debug.Log("[DirtCleaner] cleanedCount: " + cleanedCount + " / totalDirtPlanned: " + totalDirtPlanned);
-        
+
         if (!cleaned.Contains(dirt))
         {
             cleaned.Add(dirt);
@@ -424,9 +427,9 @@ public class DirtCleaner : MonoBehaviour
         if (!allCleanedFired && totalDirtPlanned > 0 && cleanedCount >= totalDirtPlanned)
         {
             allCleanedFired = true;
-            
+
             Debug.Log("[DirtCleaner] TÜM KİRLER TEMİZLENDİ! onAllCleaned tetikleniyor...");
-            
+
             // UnityEvent çalışsın (LevelTimer bunu dinliyor)
             onAllCleaned?.Invoke();
         }

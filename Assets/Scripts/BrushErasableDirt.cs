@@ -35,6 +35,9 @@ public class BrushErasableDirt : MonoBehaviour
 
     Texture2D brushTexture;
 
+    // DirtCleaner referansı (seçili fırça hız çarpanını almak için)
+    DirtCleaner cleaner;
+
     void Start()
     {
         mainCam = Camera.main;
@@ -66,6 +69,9 @@ public class BrushErasableDirt : MonoBehaviour
 
         // Fırça texture oluştur
         CreateBrushTexture();
+
+        // Sahnedeki DirtCleaner'ı bul (hız çarpanını kullanmak için)
+        cleaner = FindObjectOfType<DirtCleaner>();
     }
 
     void CreateBrushTexture()
@@ -203,6 +209,14 @@ public class BrushErasableDirt : MonoBehaviour
 
         Color[] pixels = tempTexture.GetPixels();
 
+        // Seçili fırçaya göre efektif erase gücü
+        float speedMultiplier = 1f;
+        if (cleaner != null)
+            speedMultiplier = cleaner.brushCleanSpeed;
+
+        // Hız çarpanı ile güçlendirilmiş silme gücü
+        float effectiveEraseStrength = Mathf.Clamp01(eraseStrength * speedMultiplier);
+
         // Fırça çiz (siyah = silinmiş)
         for (int y = -brushPixelSize / 2; y < brushPixelSize / 2; y++)
         {
@@ -221,7 +235,7 @@ public class BrushErasableDirt : MonoBehaviour
 
                         // Mevcut değeri koyulaştır
                         float currentValue = pixels[index].r;
-                        float newValue = currentValue * (1f - alpha * eraseStrength);
+                        float newValue = currentValue * (1f - alpha * effectiveEraseStrength);
                         pixels[index] = new Color(newValue, newValue, newValue, 1f);
                     }
                 }
@@ -273,7 +287,7 @@ public class BrushErasableDirt : MonoBehaviour
     void OnFullyCleaned()
     {
         Debug.Log("[BrushErasableDirt] " + gameObject.name + " temizlendi! DirtCleaner'a haber veriliyor...");
-        
+
         // DirtCleaner'a haber ver
         DirtCleaner cleaner = FindObjectOfType<DirtCleaner>();
         if (cleaner != null)
