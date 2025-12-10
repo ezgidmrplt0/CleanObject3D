@@ -10,8 +10,8 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
     [Header("Kamera Etkileşimi")]
     [Tooltip("Genelde MobileCameraController script'i olan obje.")]
     public MonoBehaviour cameraController;      // MobileCameraController
-    [Tooltip("Sadece kamera KİLİTLİ (controlsEnabled = false) iken tıklamayı kabul et.")]
-    public bool onlyWhenCameraLocked = true;
+    [Tooltip("Sadece kamera AKTİF (controlsEnabled = true) iken tıklamayı kabul et. Temizlik modunda çalışmaz.")]
+    public bool onlyWhenCameraActive = true;
 
     private List<Collider> colliders = new List<Collider>();
     private List<Collider2D> colliders2D = new List<Collider2D>();
@@ -77,7 +77,7 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
     // ------------------ Kamera durumunu kontrol et ------------------
     bool CameraAllowsInteraction()
     {
-        if (!onlyWhenCameraLocked)
+        if (!onlyWhenCameraActive)
             return true;
 
         if (cameraController == null)
@@ -91,7 +91,7 @@ public class ObjectTransparencyOnTouch : MonoBehaviour
             return false; // Alan yoksa da izin verme
 
         bool controlsEnabled = (bool)field.GetValue(cameraController);
-        return !controlsEnabled; // sadece kilitliyken (false) izin ver
+        return controlsEnabled; // sadece kamera aktifken (true) izin ver
     }
 
     // ------------------ TOGGLE ------------------
