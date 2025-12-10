@@ -14,12 +14,24 @@ public int coinsFor1Star = 10;
 public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek istersen
 
     [Header("Süre Ayarları (saniye)")]
-    public float timeFor3Stars = 30f;
-    public float timeFor2Stars = 50f;
+    [Tooltip("Toplam süre (geri sayım başlangıcı)")]
+    public float totalTime = 30f;
+    
+    [Tooltip("Bu süreden önce biterse 3 yıldız")]
+    public float timeFor3Stars = 10f;
+    
+    [Tooltip("Bu süreden önce biterse 2 yıldız")]
+    public float timeFor2Stars = 20f;
 
     [Header("UI")]
     public TextMeshProUGUI timerText;
     public Slider timerSlider;
+    
+    [Header("Level Failed UI")]
+    [Tooltip("Level failed olduğunda gösterilecek panel/image")]
+    public GameObject failedPanel;
+    [Tooltip("Level failed sprite (opsiyonel, starsImage üzerine)")]
+    public Sprite spriteFailedStar;
 
     [Header("Yıldız Spriteları")]
     public Image starsImage;        // Üzerine yıldız spriteları gelecek Image
@@ -39,20 +51,20 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
     [Tooltip("Her 5 levelde bir artan zorluk adımında cleanThreshold'a eklenecek değer.")]
     public float thresholdPerStep = 0.03f;
 
-    [Tooltip("Her 5 levelde bir artan zorluk adımında brushSize'e uygulanacak çarpan (0.9-1 arası, küçültmek için <1).")]
-    public float brushSizeFactorPerStep = 0.95f;
+    [Tooltip("Her 5 levelde bir artan zorluk adımında fırça boyutundan düşülecek pixel miktarı.")]
+    public int brushSizeReducePerStep = 3;
 
     [Tooltip("Temizlenme eşiği için üst sınır.")]
     public float maxCleanThreshold = 0.98f;
 
-    [Tooltip("Fırça boyutu için alt sınır.")]
-    public float minBrushSize = 0.15f;
+    [Tooltip("Fırça boyutu için alt sınır (pixel).")]
+    public int minBrushPixelRadius = 15;
 
     [Header("Level Bittiğinde")]
     [Tooltip("Level bitince kaç saniye beklenecek (yıldızları görmek için)")]
     public float delayBeforeNextLevel = 2f;
 
-    float elapsed = 0f;
+    float remainingTime = 0f;
     bool running = false;
     bool finished = false;
 
@@ -77,43 +89,116 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
             Debug.LogError("[LevelTimer] DirtCleaner BULUNAMADI!");
         }
 
-        elapsed = 0f;
-        running = false; // GameStartController aktif edene kadar bekle
+        remainingTime = totalTime;
         UpdateUI();
 
         if (starsImage) starsImage.enabled = false;
+        if (failedPanel) failedPanel.SetActive(false);
+        
+        // NOT: running durumu OnEnable'da ayarlanıyor
     }
     
     void OnEnable()
     {
         // Script aktif edildiğinde timer'ı başlat
-        elapsed = 0f;
+        StartTimer();
+    }
+    
+    /// <summary>
+    /// Timer'ı başlatır veya yeniden başlatır
+    /// </summary>
+    public void StartTimer()
+    {
+        remainingTime = totalTime;
         running = true;
         finished = false;
-        Debug.Log("[LevelTimer] Timer başlatıldı.");
+        UpdateUI();
+        Debug.Log("[LevelTimer] Timer başlatıldı. Süre: " + totalTime + " saniye");
     }
 
     void Update()
     {
         if (!running || finished) return;
 
-        elapsed += Time.deltaTime;
+        remainingTime -= Time.deltaTime;
         UpdateUI();
+        
+        // Süre bitti mi kontrol et
+        if (remainingTime <= 0f)
+        {
+            remainingTime = 0f;
+            OnTimerExpired();
+        }
     }
 
     void UpdateUI()
     {
         if (timerText)
         {
-            int sec = Mathf.FloorToInt(elapsed);
+            int sec = Mathf.CeilToInt(Mathf.Max(0f, remainingTime));
             timerText.text = sec + "s";
         }
 
         if (timerSlider)
         {
-            float maxForSlider = timeFor2Stars;
-            if (maxForSlider <= 0f) maxForSlider = 1f;
-            timerSlider.value = Mathf.Clamp01(elapsed / maxForSlider);
+            // Slider: kalan süre / toplam süre (1'den 0'a doğru azalır)
+            timerSlider.value = Mathf.Clamp01(remainingTime / totalTime);
+        }
+    }
+    
+    /// <summary>
+    /// Süre dolduğunda çağrılır - Level Failed
+    /// </summary>
+    void OnTimerExpired()
+    {
+        if (finished) return;
+        finished = true;
+        running = false;
+        
+        Debug.Log("[LevelTimer] SÜRE DOLDU! Level Failed.");
+        
+        // Failed görseli göster
+        if (failedPanel != null)
+            failedPanel.SetActive(true);
+        
+        if (starsImage != null && spriteFailedStar != null)
+        {
+            starsImage.sprite = spriteFailedStar;
+            starsImage.enabled = true;
+        }
+        
+        // Aynı level'i tekrar yükle (level artmadan)
+        StartCoroutine(ReloadSameLevelAfterDelay(delayBeforeNextLevel));
+    }
+    
+    System.Collections.IEnumerator ReloadSameLevelAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Failed panelini gizle
+        if (failedPanel != null) failedPanel.SetActive(false);
+        if (starsImage != null) starsImage.enabled = false;
+        
+        // LevelManager ile aynı level'i tekrar yükle
+        if (levelManager == null)
+            levelManager = FindObjectOfType<LevelManager>();
+        
+        if (levelManager != null)
+        {
+            // Aynı prefab'ı sıfırla ve yeniden yükle
+            int currentPrefabIndex = levelManager.GetCurrentPrefabIndex();
+            levelManager.LoadLevel(currentPrefabIndex);
+            Debug.Log("[LevelTimer] Aynı level tekrar yükleniyor...");
+            
+            yield return new WaitForSeconds(levelManager.transitionDuration + 0.2f);
+            
+            ResetForNewLevel();
+        }
+        else
+        {
+            // LevelManager yoksa sahneyi yeniden yükle
+            Debug.LogWarning("[LevelTimer] LevelManager bulunamadı, sahne yeniden yükleniyor.");
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }
 
@@ -171,10 +256,14 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
     
     void ResetForNewLevel()
     {
-        // Timer'ı sıfırla
-        elapsed = 0f;
+        // Timer'ı sıfırla (geri sayım başa dönsün)
+        remainingTime = totalTime;
         running = true;
         finished = false;
+        
+        // Failed panelini gizle
+        if (failedPanel != null) failedPanel.SetActive(false);
+        if (starsImage != null) starsImage.enabled = false;
         
         // DirtCleaner'ı yeni level için sıfırla
         if (dirtCleaner == null)
@@ -193,13 +282,20 @@ public TextMeshProUGUI coinsText;   // Ekranda toplam parayı göstermek isterse
         // Zorluk ayarla
         ApplyDifficultyForLevel(currentLevel);
         
-        Debug.Log("[LevelTimer] Yeni level için sıfırlandı.");
+        UpdateUI();
+        Debug.Log("[LevelTimer] Yeni level için sıfırlandı. Süre: " + totalTime + " saniye");
     }
 
     int CalculateStars()
     {
-        if (elapsed <= timeFor3Stars) return 3;
-        if (elapsed <= timeFor2Stars) return 2;
+        // Harcanan süre = toplam süre - kalan süre
+        float elapsedTime = totalTime - remainingTime;
+        
+        // 10 saniyeden önce biterse 3 yıldız
+        // 20 saniyeden önce biterse 2 yıldız
+        // 20-30 arası 1 yıldız
+        if (elapsedTime <= timeFor3Stars) return 3;
+        if (elapsedTime <= timeFor2Stars) return 2;
         return 1;
     }
 
@@ -256,8 +352,8 @@ void UpdateCoinsUI()
             dirt.cleanThreshold = Mathf.Min(dirt.cleanThreshold, maxCleanThreshold);
 
             // Fırça boyutunu biraz küçült (her stroke daha az alan silsin)
-            float sizeFactor = Mathf.Pow(brushSizeFactorPerStep, step);
-            dirt.brushSize = Mathf.Max(minBrushSize, dirt.brushSize * sizeFactor);
+            int reduceAmount = brushSizeReducePerStep * step;
+            dirt.brushPixelRadius = Mathf.Max(minBrushPixelRadius, dirt.brushPixelRadius - reduceAmount);
         }
     }
 

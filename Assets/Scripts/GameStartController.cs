@@ -148,13 +148,14 @@ public class GameStartController : MonoBehaviour
             dirtCleaner.FindAllDirts(); // Kirleri bul
         }
         
-        // LevelTimer'ı aktif et
+        // LevelTimer'ı aktif et ve başlat
         if (levelTimer == null)
             levelTimer = FindObjectOfType<LevelTimer>();
         
         if (levelTimer != null)
         {
             levelTimer.enabled = true;
+            levelTimer.StartTimer(); // Timer'ı manuel başlat
         }
     }
     

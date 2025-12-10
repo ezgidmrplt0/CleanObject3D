@@ -4,8 +4,8 @@ using DG.Tweening;
 public class BrushErasableDirt : MonoBehaviour
 {
     [Header("Ayarlar")]
-    [Tooltip("Fırça boyutu (dünya birimi cinsinden)")]
-    public float brushSize = 0.3f;
+    [Tooltip("Fırça boyutu (texture pixel cinsinden, sabit kalır)")]
+    public int brushPixelRadius = 30;
 
     [Tooltip("Fırça yumuşaklığı (1 = sert, 0.1 = yumuşak)")]
     [Range(0.1f, 1f)]
@@ -197,9 +197,8 @@ public class BrushErasableDirt : MonoBehaviour
     {
         RenderTexture.active = maskTexture;
 
-        // Fırça boyutunu texture space'e çevir
-        int brushPixelSize = Mathf.RoundToInt(brushSize * textureResolution / 10f);
-        brushPixelSize = Mathf.Max(10, brushPixelSize);
+        // Sabit fırça boyutu (obje boyutundan bağımsız)
+        int brushPixelSize = Mathf.Max(10, brushPixelRadius * 2);
 
         // Manuel pixel yazma (daha stabil)
         Texture2D tempTexture = new Texture2D(textureResolution, textureResolution, TextureFormat.ARGB32, false);
