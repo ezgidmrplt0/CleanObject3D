@@ -1048,13 +1048,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 654743587}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.8, y: 0.79, z: -6.88}
+  m_LocalRotation: {x: -0.28201145, y: 0, z: -0, w: 0.959411}
+  m_LocalPosition: {x: -1.3599999, y: -3.4783988, z: 7.862953}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1811518891}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 963194228}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &655814988
 PrefabInstance:
@@ -1119,6 +1119,10 @@ PrefabInstance:
     - target: {fileID: 6310303809365802803, guid: b2441d1359277404680dd85397085ce0, type: 3}
       propertyPath: m_Name
       value: Level11Bedroom
+      objectReference: {fileID: 0}
+    - target: {fileID: 6310303809365802803, guid: b2441d1359277404680dd85397085ce0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9113113852329407025, guid: b2441d1359277404680dd85397085ce0, type: 3}
       propertyPath: cleanThreshold
@@ -1349,15 +1353,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 790411287253643579, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
       propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2011159555941443895, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 2326668342870539771, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4983992458247421453, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1399,14 +1395,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5357261716280411078, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
-      objectReference: {fileID: 0}
     - target: {fileID: 5664170627178399820, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
       propertyPath: cameraController
       value: 
       objectReference: {fileID: 963194229}
+    - target: {fileID: 8290332401150569432, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -18.724
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290332401150569432, guid: a8b2bf8893f86a642b18b852cdd7bbe1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 26.858
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1425,9 +1425,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 915713284}
     m_Modifications:
-    - target: {fileID: 1680918351822724438, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
+    - target: {fileID: 1212164536263037435, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2.46
       objectReference: {fileID: 0}
     - target: {fileID: 4754718435762752261, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1472,18 +1472,6 @@ PrefabInstance:
     - target: {fileID: 7575313698215033721, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
       propertyPath: m_Name
       value: Level9LivingRoom
-      objectReference: {fileID: 0}
-    - target: {fileID: 7575313698215033721, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8662188628307399444, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9217875816902180862, guid: db6d4185efcf60341a4743f5f4b06cb4, type: 3}
-      propertyPath: cleanThreshold
-      value: 0.5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1750,7 +1738,8 @@ Transform:
   m_LocalPosition: {x: -0.44, y: 7.97, z: -11.61}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 654743588}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 32.761, y: 0, z: 0}
 --- !u!114 &963194229
@@ -8654,7 +8643,6 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 2087674025}
-  - {fileID: 654743588}
   - {fileID: 431181407}
   - {fileID: 1697540212}
   - {fileID: 514804092}

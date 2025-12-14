@@ -6,15 +6,15 @@ public class FoamTransitionController : MonoBehaviour
     public static FoamTransitionController Instance { get; private set; }
 
     [Header("Particle References")]
-    [Tooltip("Ekraný köpükle kapatan ana patlama sistemi")]
+    [Tooltip("Ekranï¿½ kï¿½pï¿½kle kapatan ana patlama sistemi")]
     public ParticleSystem closeFoamSystem;
 
-    [Tooltip("Ýstersen açýlýþta farklý bir efekt kullanmak için ikinci sistem")]
-    public ParticleSystem openFoamSystem; // boþ býrakýlýrsa closeFoamSystem kullanýlýr
+    [Tooltip("ï¿½stersen aï¿½ï¿½lï¿½ï¿½ta farklï¿½ bir efekt kullanmak iï¿½in ikinci sistem")]
+    public ParticleSystem openFoamSystem; // boï¿½ bï¿½rakï¿½lï¿½rsa closeFoamSystem kullanï¿½lï¿½r
 
     [Header("Settings")]
-    [Tooltip("Geçiþ süresi (FoamClose/FoamOpen için temel süre)")]
-    public float defaultDuration = 2.5f;   // 2–3 sn dedin ya, buna yakýn tut
+    [Tooltip("Geï¿½iï¿½ sï¿½resi (FoamClose/FoamOpen iï¿½in temel sï¿½re)")]
+    public float defaultDuration = 2.5f;   // 2ï¿½3 sn dedin ya, buna yakï¿½n tut
 
     void Awake()
     {
@@ -24,6 +24,14 @@ public class FoamTransitionController : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // Kameraya sabitleme
+        if (Camera.main != null)
+        {
+            transform.SetParent(Camera.main.transform);
+            transform.localPosition = new Vector3(0, 0, 1f); // KameranÄ±n 1 birim Ã¶nÃ¼nde
+            transform.localRotation = Quaternion.identity;
+        }
 
         if (closeFoamSystem != null)
         {
@@ -36,8 +44,18 @@ public class FoamTransitionController : MonoBehaviour
         }
     }
 
+    void LateUpdate()
+    {
+        // Her karede kameranÄ±n Ã¶nÃ¼ne sabitle
+        if (Camera.main != null)
+        {
+            transform.position = Camera.main.transform.position + Camera.main.transform.forward * 1f; // 1 birim Ã¶nÃ¼nde
+            transform.rotation = Camera.main.transform.rotation;
+        }
+    }
+
     /// <summary>
-    /// Ekraný köpükle kapatma (OUT transition)
+    /// EkranÄ± kÃ¶pÃ¼kle kapatma (OUT transition)
     /// </summary>
     public Tween FoamClose(float duration = -1f)
     {
@@ -49,7 +67,7 @@ public class FoamTransitionController : MonoBehaviour
         main.duration = duration;
         main.useUnscaledTime = true;
 
-        // Bubbles'ýn ölme süresini duration'a göre ayarla (isteðe baðlý)
+        // Bubbles'ï¿½n ï¿½lme sï¿½resini duration'a gï¿½re ayarla (isteï¿½e baï¿½lï¿½)
         main.startLifetime = new ParticleSystem.MinMaxCurve(
             duration * 0.6f,
             duration * 1.0f
@@ -58,16 +76,16 @@ public class FoamTransitionController : MonoBehaviour
         closeFoamSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         closeFoamSystem.Play(true);
 
-        // DOTween sequence sadece süreyi beklemek için
+        // DOTween sequence sadece sï¿½reyi beklemek iï¿½in
         Sequence seq = DOTween.Sequence();
         seq.AppendInterval(duration);
-        seq.SetUpdate(true); // timescale'den baðýmsýz
+        seq.SetUpdate(true); // timescale'den baï¿½ï¿½msï¿½z
 
         return seq;
     }
 
     /// <summary>
-    /// Köpüklerin patlayýp yok olduðu, ekranýn açýldýðý kýsým (IN transition)
+    /// Kï¿½pï¿½klerin patlayï¿½p yok olduï¿½u, ekranï¿½n aï¿½ï¿½ldï¿½ï¿½ï¿½ kï¿½sï¿½m (IN transition)
     /// </summary>
     public Tween FoamOpen(float duration = -1f)
     {
