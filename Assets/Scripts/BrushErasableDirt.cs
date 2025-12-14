@@ -15,9 +15,9 @@ public class BrushErasableDirt : MonoBehaviour
     [Range(0.5f, 0.99f)]
     public float cleanThreshold = 0.85f;
 
-    [Tooltip("Her fırça vuruşunda ne kadar silinsin (0.05-0.5 arası tipik).")]
-    [Range(0.01f, 0.5f)]
-    public float eraseStrength = 0.3f;
+    [Tooltip("Her fırça vuruşunda ne kadar silinsin (0.05-1.0 arası tipik).")]
+    [Range(0.01f, 1.0f)]
+    public float eraseStrength = 0.6f;
 
     [Header("Otomatik Ayarlar")]
     [Tooltip("RenderTexture çözünürlüğü (mobil için 256 yeterli)")]
