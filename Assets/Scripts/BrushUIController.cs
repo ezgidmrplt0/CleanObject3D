@@ -113,7 +113,7 @@ public class BrushUIController : MonoBehaviour
     // Fırça ID'sine göre temizlik hız çarpanı (0 -> 1.0, 1 -> 1.25, 2 -> 1.5, ...)
     float GetBrushSpeedMultiplier()
     {
-        return 1f + currentBrushId * 0.25f;
+        return 1f + currentBrushId * 1f;
     }
 
     void ToggleBrush()

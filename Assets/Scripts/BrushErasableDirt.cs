@@ -34,6 +34,8 @@ public class BrushErasableDirt : MonoBehaviour
     bool isFullyCleaned = false;
 
     Texture2D brushTexture;
+    Texture2D cleanCheckTexture; // Performans için tekrar kullanılan texture
+    Material brushDrawMaterial;  // GPU çizimi için materyal
 
     // DirtCleaner referansı (seçili fırça hız çarpanını almak için)
     DirtCleaner cleaner;
@@ -69,6 +71,11 @@ public class BrushErasableDirt : MonoBehaviour
 
         // Fırça texture oluştur
         CreateBrushTexture();
+        
+        // GPU çizimi için basit materyal
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader == null) shader = Shader.Find("UI/Default");
+        brushDrawMaterial = new Material(shader);
 
         // Sahnedeki DirtCleaner'ı bul (hız çarpanını kullanmak için)
         cleaner = FindObjectOfType<DirtCleaner>();
@@ -95,12 +102,17 @@ public class BrushErasableDirt : MonoBehaviour
                 float alpha = Mathf.Clamp01(1f - (distance / radius));
                 alpha = Mathf.Pow(alpha, 1f / brushHardness); // Sertlik ayarı
 
-                pixels[y * size + x] = new Color(0, 0, 0, alpha); // Siyah = sil
+                // Siyah renk, alpha kanalı şekli belirler
+                pixels[y * size + x] = new Color(0, 0, 0, alpha); 
             }
         }
 
         brushTexture.SetPixels(pixels);
         brushTexture.Apply();
+        
+        // GPU çizimi için materyale ata
+        if (brushDrawMaterial != null)
+            brushDrawMaterial.mainTexture = brushTexture;
     }
 
     // >>> BURASI GÜNCELLENDİ <<<
@@ -195,18 +207,21 @@ public class BrushErasableDirt : MonoBehaviour
 
     void DrawBrush(int centerX, int centerY)
     {
+        // GPU tabanlı çizim (Mobil performans için optimize edildi)
+        // ReadPixels/SetPixels yerine GL komutları kullanıyoruz.
+        
         RenderTexture.active = maskTexture;
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, textureResolution, textureResolution, 0);
 
-        // Sabit fırça boyutu (obje boyutundan bağımsız)
+        // Fırça boyutu
         int brushPixelSize = Mathf.Max(10, brushPixelRadius * 2);
-
-        // Manuel pixel yazma (daha stabil)
-        Texture2D tempTexture = new Texture2D(textureResolution, textureResolution, TextureFormat.ARGB32, false);
-        RenderTexture.active = maskTexture;
-        tempTexture.ReadPixels(new Rect(0, 0, textureResolution, textureResolution), 0, 0);
-        tempTexture.Apply();
-
-        Color[] pixels = tempTexture.GetPixels();
+        
+        // Çizilecek alan
+        float x = centerX - brushPixelSize / 2f;
+        float y = centerY - brushPixelSize / 2f;
+        float w = brushPixelSize;
+        float h = brushPixelSize;
 
         // Seçili fırçaya göre efektif erase gücü
         float speedMultiplier = 1f;
@@ -216,65 +231,60 @@ public class BrushErasableDirt : MonoBehaviour
         // Hız çarpanı ile güçlendirilmiş silme gücü
         float effectiveEraseStrength = Mathf.Clamp01(eraseStrength * speedMultiplier);
 
-        // Fırça çiz (siyah = silinmiş)
-        for (int y = -brushPixelSize / 2; y < brushPixelSize / 2; y++)
+        // Fırça çizimi
+        // Siyah renk (silme) ve Alpha (güç)
+        // Sprites/Default shader'ı vertex color ile texture'ı çarpar.
+        // Texture'ımız zaten siyah ve alpha içeriyor.
+        // Vertex color alpha'sını eraseStrength ile çarparak gücü ayarlıyoruz.
+        
+        if (brushDrawMaterial.SetPass(0))
         {
-            for (int x = -brushPixelSize / 2; x < brushPixelSize / 2; x++)
-            {
-                int px = centerX + x;
-                int py = centerY + y;
-
-                if (px >= 0 && px < textureResolution && py >= 0 && py < textureResolution)
-                {
-                    float dist = Mathf.Sqrt(x * x + y * y) / (brushPixelSize / 2f);
-                    if (dist <= 1f)
-                    {
-                        float alpha = Mathf.Pow(1f - dist, 1f / brushHardness);
-                        int index = py * textureResolution + px;
-
-                        // Mevcut değeri koyulaştır
-                        float currentValue = pixels[index].r;
-                        float newValue = currentValue * (1f - alpha * effectiveEraseStrength);
-                        pixels[index] = new Color(newValue, newValue, newValue, 1f);
-                    }
-                }
-            }
+            GL.Begin(GL.QUADS);
+            GL.Color(new Color(0, 0, 0, effectiveEraseStrength)); // Siyah ve Alpha gücü
+            
+            GL.TexCoord2(0, 0); GL.Vertex3(x, y, 0);
+            GL.TexCoord2(0, 1); GL.Vertex3(x, y + h, 0);
+            GL.TexCoord2(1, 1); GL.Vertex3(x + w, y + h, 0);
+            GL.TexCoord2(1, 0); GL.Vertex3(x + w, y, 0);
+            
+            GL.End();
         }
 
-        tempTexture.SetPixels(pixels);
-        tempTexture.Apply();
-
-        Graphics.Blit(tempTexture, maskTexture);
+        GL.PopMatrix();
         RenderTexture.active = null;
-
-        Destroy(tempTexture);
     }
 
     void CheckCleanProgress()
     {
         // Her frame kontrol etme, performans için seyrek kontrol
-        if (Time.frameCount % 10 != 0) return;
+        if (Time.frameCount % 15 != 0) return;
 
-        // Maskenin ne kadarının siyah olduğunu hesapla (CPU'da ağır, mobil için optimize)
+        // Texture buffer'ı tekrar kullan (GC alloc önlemek için)
+        if (cleanCheckTexture == null)
+        {
+            cleanCheckTexture = new Texture2D(textureResolution, textureResolution, TextureFormat.RGB24, false);
+        }
+
         RenderTexture.active = maskTexture;
-        Texture2D temp = new Texture2D(textureResolution, textureResolution, TextureFormat.RGB24, false);
-        temp.ReadPixels(new Rect(0, 0, textureResolution, textureResolution), 0, 0);
-        temp.Apply();
+        cleanCheckTexture.ReadPixels(new Rect(0, 0, textureResolution, textureResolution), 0, 0);
+        cleanCheckTexture.Apply();
+        RenderTexture.active = null;
 
-        Color[] pixels = temp.GetPixels();
+        // NativeArray veya ComputeShader olmadan en hızlı yöntem:
+        // Ancak mobil için GetPixels() hala biraz ağır olabilir.
+        // Yine de ReadPixels'i her frame yapmaktan çok daha iyidir.
+        
+        Color[] pixels = cleanCheckTexture.GetPixels();
         float blackPixels = 0;
+        int step = 4; // Örnekleme sıklığı (daha yüksek = daha hızlı ama az hassas)
 
-        // Basit sampling (her 4. pixel, mobil performans)
-        for (int i = 0; i < pixels.Length; i += 4)
+        for (int i = 0; i < pixels.Length; i += step)
         {
             if (pixels[i].r < 0.5f) // Siyaha yakın
                 blackPixels++;
         }
 
-        Destroy(temp);
-        RenderTexture.active = null;
-
-        erasedPixels = (blackPixels * 4f) / totalPixels; // *4 çünkü her 4. pixel kontrol ettik
+        erasedPixels = (blackPixels * step) / totalPixels;
 
         if (erasedPixels >= cleanThreshold && !isFullyCleaned)
         {
